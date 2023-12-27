@@ -1,0 +1,31 @@
+{
+  "name": "FrameHop",
+  "id": "1319412441392289036",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": [
+    "figma"
+  ],
+  "ui": "ui.html",
+  "menu": [
+    {
+      "name": "Open FrameHop",
+      "command": "openFrameHop"
+    },
+    {
+      "name": "Hop Backwards",
+      "command": "hopBackwards"
+    },
+    {
+      "name": "Hop Forwards",
+      "command": "hopForwards"
+    }
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ]
+  }
+}

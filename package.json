@@ -1,0 +1,16 @@
+{
+  "name": "FrameHop",
+  "version": "1.0.0",
+  "description": "Hop between Frames and Components faster than ever",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "npm run build -- --watch"
+  },
+  "author": "Addison James",
+  "license": "",
+  "devDependencies": {
+    "@figma/plugin-typings": "*",
+    "typescript": "*"
+  }
+}

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+            Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 9pt;
+            margin: 0;
+            padding: 0px;
+            background-color: #2C2C2C; 
+            color: #ffffff; 
+        }
+        .eyebrow {
+            font-size: 9pt; /* 8pt font size */
+            text-transform: none; /* All caps */
+            font-weight: bold; /* Bold font */
+            margin-top: 0;
+            color: #ffffff;
+            padding: 12px;
+            
+        }
+        ul {
+            list-style-type: none; /* Removes bullets */
+            padding: 0;
+            padding-bottom: 0px;
+            margin: 0;
+        }
+        li {
+            margin-bottom: 8px; /* Increases line spacing */
+            cursor: pointer;
+        }
+        .frame-list {
+            margin-top: 20px;
+        }
+
+        .frame-item {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* Align items to the left */
+            height: 32px; /* Set the height of each row */
+            padding: 0 16px; /* Padding for some space on the sides */
+        }
+
+    /* Style for history list items */
+    .history-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between; /* Keep items on each end */
+        height: 32px;
+        padding: 0 16px;
+    }
+
+    /* Style for favorite list items */
+    .favorite-item {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start; /* Align items to the left */
+        height: 32px;
+        padding: 0 10px;
+    }
+
+    /* Style for star icon in favorite list */
+    .favorite-star-icon {
+        cursor: pointer;
+        margin-right: 4px; /* Space between star and frame name */
+    }
+
+        .star-icon {
+            cursor: pointer;
+            margin-right: 4px; /* Adjust the space between the star and the frame name */
+        }
+
+    </style>
+</head>
+<body>
+
+        <!-- SVG for Frame Icon -->
+        <!--
+        <?xml version="1.0" encoding="UTF-8"?><svg width="14px" height="14px" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="#FFFFFF"><path d="M6 3L6 21" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M18 3L18 21" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 6L21 6" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 18L21 18" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        -->
+        <!-- SVG for Component Icon -->
+        <!--
+        <?xml version="1.0" encoding="UTF-8"?><svg width="14px" height="14px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="#ffffff" stroke-width="1.5"><path d="M5.21186 15.1113L2.52485 12.4243C2.29054 12.1899 2.29054 11.8101 2.52485 11.5757L5.21186 8.88873C5.44617 8.65442 5.82607 8.65442 6.06038 8.88873L8.74739 11.5757C8.9817 11.8101 8.9817 12.1899 8.74739 12.4243L6.06038 15.1113C5.82607 15.3456 5.44617 15.3456 5.21186 15.1113Z" fill="#ffffff" stroke="#ffffff" stroke-width="1.5"></path><path d="M11.5756 21.4755L8.88862 18.7885C8.6543 18.5542 8.6543 18.1743 8.88862 17.94L11.5756 15.253C11.8099 15.0187 12.1898 15.0187 12.4242 15.253L15.1112 17.94C15.3455 18.1743 15.3455 18.5542 15.1112 18.7885L12.4242 21.4755C12.1898 21.7098 11.8099 21.7098 11.5756 21.4755Z" fill="#ffffff" stroke="#ffffff" stroke-width="1.5"></path><path d="M11.5756 8.74701L8.88862 6.06001C8.6543 5.82569 8.6543 5.44579 8.88862 5.21148L11.5756 2.52447C11.8099 2.29016 12.1898 2.29016 12.4242 2.52447L15.1112 5.21148C15.3455 5.44579 15.3455 5.82569 15.1112 6.06001L12.4242 8.74701C12.1898 8.98133 11.8099 8.98133 11.5756 8.74701Z" fill="#ffffff" stroke="#ffffff" stroke-width="1.5"></path><path d="M17.9396 15.1113L15.2526 12.4243C15.0183 12.1899 15.0183 11.8101 15.2526 11.5757L17.9396 8.88873C18.174 8.65442 18.5539 8.65442 18.7882 8.88873L21.4752 11.5757C21.7095 11.8101 21.7095 12.1899 21.4752 12.4243L18.7882 15.1113C18.5539 15.3456 18.174 15.3456 17.9396 15.1113Z" fill="#ffffff" stroke="#ffffff" stroke-width="1.5"></path></svg>
+        -->
+
+    <div class="eyebrow" id="favoriteFramesTitle">Favorite Frames</div>
+    <ul id="favoriteList"></ul>
+
+    <div class="eyebrow">Frame History</div>
+    <ul id="frameList"></ul>
+
+    <div class="eyebrow" id="clearData" style="color: #BFBFBF; cursor: pointer;">
+    Clear Data
+    </div>
+
+<script>
+    let history = [];
+    let currentIndex = -1;
+    let favorites = [];
+
+    // Function to update the plugin data with the current history and index
+    function updatePluginData() {
+        const data = { history, currentIndex };
+        figma.root.setPluginData('frameHopData', JSON.stringify(data));
+    }
+
+    function updateFrameList(historyData, currentFrameId) {
+        const list = document.getElementById('frameList');
+        list.innerHTML = '';
+        let currentFrameFound = false;
+
+        historyData.forEach(frame => {
+            const listItem = document.createElement('li');
+            listItem.classList.add('history-item');
+
+            const frameName = document.createElement('span');
+            frameName.textContent = frame.name;
+            frameName.onclick = () => jumpToFrame(frame.id);
+            listItem.appendChild(frameName);
+
+            const star = document.createElement('span');
+            star.classList.add('star-icon');
+            star.textContent = favorites.some(fav => fav.id === frame.id) ? '★' : '☆';
+            star.onclick = () => toggleFavorite(frame, historyData);
+            listItem.appendChild(star);
+
+            if (frame.id === currentFrameId && !currentFrameFound) {
+                listItem.style.backgroundColor = '#4D5875';
+                currentFrameFound = true;
+            }
+
+            list.appendChild(listItem);
+        });
+    }
+
+    function updateFavoriteList() {
+        const list = document.getElementById('favoriteList');
+        const title = document.getElementById('favoriteFramesTitle');
+        list.innerHTML = '';
+
+        if (favorites.length > 0) {
+            title.style.display = 'block';
+            list.style.paddingBottom = '0px';
+
+            favorites.forEach(frame => {
+                const listItem = document.createElement('li');
+                listItem.classList.add('favorite-item');
+
+                const star = document.createElement('span');
+                star.classList.add('favorite-star-icon');
+                star.textContent = '★';
+                star.onclick = () => toggleFavorite(frame);
+                listItem.appendChild(star);
+
+                const frameName = document.createElement('span');
+                frameName.textContent = frame.name;
+                frameName.onclick = () => jumpToFrame(frame.id);
+                listItem.appendChild(frameName);
+
+                list.appendChild(listItem);
+            });
+        } else {
+            title.style.display = 'none';
+            list.style.paddingBottom = '0px';
+        }
+    }
+
+// Function to toggle favorite status
+function toggleFavorite(frame, historyData = null) {
+    const isFavorite = favorites.some(fav => fav.id === frame.id);
+    if (isFavorite) {
+        favorites = favorites.filter(fav => fav.id !== frame.id);
+    } else {
+        favorites.push(frame);
+    }
+
+    updateFavoriteList();
+    
+    // Send the updated favorites to the plugin
+    parent.postMessage({
+        pluginMessage: {
+            type: 'updateFavorites',
+            favorites: favorites
+        }
+    }, '*');
+}
+
+
+
+
+    function jumpToFrame(frameId) {
+        parent.postMessage({ pluginMessage: { type: 'jumpToFrame', frameId } }, '*');
+    }
+
+// Function to send a message to clear all data
+function clearAllData() {
+    // Send a message to the plugin code to clear all data
+    parent.postMessage({ pluginMessage: { type: 'clearData' } }, '*');
+}
+
+    // Add the event listener for the Clear Data button
+    document.getElementById('clearData').onclick = clearAllData;
+
+window.onmessage = event => {
+    const { type, historyData, currentFrameId, favorites: updatedFavorites } = event.data.pluginMessage;
+    if (type === 'update') {
+        history = historyData; // Save the updated history
+        currentIndex = historyData.findIndex(frame => frame.id === currentFrameId);
+        favorites = updatedFavorites; // Save the updated favorites
+        updateFrameList(historyData, currentFrameId);
+        updateFavoriteList();
+    }
+};
+</script>
+</body>
+</html>
