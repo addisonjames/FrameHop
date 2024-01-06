@@ -26,15 +26,22 @@ function loadPluginData() {
 }
 
 function updateUI() {
-  const recentHistory = history
-    .slice(0, 16) // Get the first 16 items, assuming they're the most recent
+  let recentHistory;
+  if (isReorderHistoryEnabled) {
+    recentHistory = history.slice(0, 16);
+  } else {
+    recentHistory = [...history].reverse().slice(0, 16);
+  }
+
+  recentHistory = recentHistory
     .map((item) => {
       const node = figma.getNodeById(item.frameId);
       const page = node ? figma.getNodeById(item.pageId) : null;
       return node && page
         ? {
             id: node.id,
-            name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
+            name:
+              node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
             pageId: page.id,
             pageName: page.name,
             isSection: item.isSection || false,
@@ -82,6 +89,9 @@ function jumpToFrame(frameId) {
   updateUI();
 }
 
+// Control whether the history is reordered or not
+let isReorderHistoryEnabled = true; // This can be toggled by the user
+
 // Function to record the frame ID and page ID when a new frame is selected
 function updateHistory() {
   const currentSelection = figma.currentPage.selection;
@@ -99,16 +109,35 @@ function updateHistory() {
       const isSection = itemType === "SECTION";
       const item = { frameId: itemId, pageId: pageId, isSection: isSection };
 
-      // Remove the item if it already exists in history
-      history = history.filter((h) => h.frameId !== itemId || h.pageId !== pageId);
+      if (isReorderHistoryEnabled) {
+        // Remove the item if it already exists in history
+        history = history.filter(
+          (h) => h.frameId !== itemId || h.pageId !== pageId
+        );
+        // Add the item to the beginning of the history array
+        history.unshift(item);
+        // Update currentIndex to point to the first item
+        currentIndex = 0;
+      } else {
+        // If reordering is disabled, simply add the new item if it's not already in history
+        const itemIndex = history.findIndex(
+          (h) => h.frameId === itemId && h.pageId === pageId
+        );
+        if (itemIndex === -1) {
+          history.push(item);
+          currentIndex = history.length - 1;
+        } else {
+          // If item is already in history, just update currentIndex
+          currentIndex = itemIndex;
+        }
+      }
 
-      // Add the item to the beginning of the history array
-      history.unshift(item);
-
-      // Update currentIndex to point to the first item
-      currentIndex = 0;
-
-      console.log("updateHistory - currentIndex:", currentIndex, "history updated:", history);
+      console.log(
+        "updateHistory - currentIndex:",
+        currentIndex,
+        "history updated:",
+        history
+      );
       updatePluginData();
     }
   }
