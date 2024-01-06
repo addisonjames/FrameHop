@@ -8,21 +8,19 @@ function updatePluginData() {
 }
 
 function loadPluginData() {
-  const data = figma.root.getPluginData('frameHopData');
+  const data = figma.root.getPluginData("frameHopData");
+  // Debug logs to check what data is being loaded
+  console.log("loadPluginData - Loaded data:", data);
+
   if (data) {
     const parsedData = JSON.parse(data);
-    // Debug log
-    console.log('Loaded Plugin Data:', parsedData);
     history = parsedData.history || [];
     currentIndex = parsedData.currentIndex || -1;
     favorites = parsedData.favorites || [];
   } else {
-    // This else block should be hit when data is cleared
     history = [];
     currentIndex = -1;
     favorites = [];
-    // Debug log
-    console.log('No Plugin Data Found. Resetting to initial state.');
   }
   updateUI();
 }
@@ -130,15 +128,10 @@ function hopForwards() {
   loadPluginData();
   if (currentIndex < history.length - 1) {
     currentIndex += 1;
-    jumpToFrame(history[currentIndex]);
+    jumpToFrame(history[currentIndex].frameId);
     updatePluginData();
+    console.log("After Hop Forwards: currentIndex =", currentIndex);
   }
-  console.log(
-    "After Hop Forwards: currentIndex =",
-    currentIndex,
-    ", history =",
-    history
-  );
 }
 
 // Handle hopping backwards in history
@@ -152,15 +145,10 @@ function hopBackwards() {
   loadPluginData();
   if (currentIndex > 0) {
     currentIndex -= 1;
-    jumpToFrame(history[currentIndex]);
+    jumpToFrame(history[currentIndex].frameId);
     updatePluginData();
+    console.log("After Hop Backwards: currentIndex =", currentIndex);
   }
-  console.log(
-    "After Hop Backwards: currentIndex =",
-    currentIndex,
-    ", history =",
-    history
-  );
 }
 
 // Message handling from the UI
@@ -169,13 +157,16 @@ figma.ui.onmessage = (msg) => {
     case "jumpToFrame":
       jumpToFrame(msg.frameId);
       break;
-case 'clearData':
-  history = [];
-  currentIndex = -1;
-  favorites = [];
-  figma.root.setPluginData('frameHopData', JSON.stringify({ history, currentIndex, favorites })); // Directly update storage
-  updateUI();
-  break;
+    case "clearData":
+      history = [];
+      currentIndex = -1;
+      favorites = [];
+      figma.root.setPluginData(
+        "frameHopData",
+        JSON.stringify({ history, currentIndex, favorites })
+      ); // Directly update storage
+      updateUI();
+      break;
     case "updateFavorites":
       favorites = msg.favorites.map((fav) => ({
         id: fav.id,
