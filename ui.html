@@ -175,7 +175,7 @@
             name: frame.name,
             pageId: frame.pageId,
             pageName: frame.pageName,
-            isSection: frame.isSection, // Ensure isSection is being sent
+            isSection: frame.isSection || false,
           });
         }
         parent.postMessage(
@@ -191,14 +191,20 @@
         );
       }
 
-      document.getElementById("clearData").onclick = function () {
-        history = [];
-        currentIndex = -1;
-        favorites = [];
-        updatePluginData();
-        updateFrameList([]);
-        updateFavoriteList();
-      };
+  // Function to handle the 'Clear Data' button click
+  document.getElementById("clearData").onclick = function () {
+    // Reset local history, currentIndex, and favorites
+    history = [];
+    currentIndex = -1;
+    favorites = [];
+
+    // Update the frame list and favorites list in the UI to reflect the cleared data
+    updateFrameList([]);
+    updateFavoriteList();
+
+    // Send a message to the main plugin script to clear the data there as well
+    parent.postMessage({ pluginMessage: { type: "clearData" } }, "*");
+  };
 
       window.onmessage = (event) => {
         const {
