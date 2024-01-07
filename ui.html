@@ -86,10 +86,15 @@
       Clear Data
     </div>
 
+    <div class="eyebrow">Show Page Names</div>
+    <!-- The toggle for showing/hiding page names -->
+    <input type="checkbox" id="togglePageName" checked />
+
     <script>
       let history = [];
       let currentIndex = -1;
       let favorites = [];
+      let showPageName = true; // Initialize the variable to store the toggle state
 
       function updatePluginData() {
         const data = { history, currentIndex, favorites };
@@ -107,16 +112,20 @@
 
           const frameName = document.createElement("span");
           frameName.textContent = frame.name;
+          listItem.appendChild(frameName);
 
-          const truncatedPageName =
-            frame.pageName.length > 32
-              ? frame.pageName.substring(0, 29) + "..."
-              : frame.pageName;
+          if (showPageName && frame.pageName) {
+            // Ensure there is a page name to display
+            const truncatedPageName =
+              frame.pageName.length > 32
+                ? frame.pageName.substring(0, 29) + "..."
+                : frame.pageName;
 
-          const pageNameSpan = document.createElement("span");
-          pageNameSpan.textContent = " (" + truncatedPageName + ")";
-          pageNameSpan.className = "page-name-style";
-          frameName.appendChild(pageNameSpan);
+            const pageNameSpan = document.createElement("span");
+            pageNameSpan.textContent = ` (${truncatedPageName})`; // Page name with parentheses
+            pageNameSpan.className = "page-name-style";
+            frameName.appendChild(pageNameSpan);
+          }
 
           frameName.onclick = () => jumpToFrame(frame.id, frame.pageId);
           listItem.appendChild(frameName);
@@ -191,20 +200,36 @@
         );
       }
 
-  // Function to handle the 'Clear Data' button click
-  document.getElementById("clearData").onclick = function () {
-    // Reset local history, currentIndex, and favorites
-    history = [];
-    currentIndex = -1;
-    favorites = [];
+      // Function to handle the 'Clear Data' button click
+      document.getElementById("clearData").onclick = function () {
+        // Reset local history, currentIndex, and favorites
+        history = [];
+        currentIndex = -1;
+        favorites = [];
 
-    // Update the frame list and favorites list in the UI to reflect the cleared data
-    updateFrameList([]);
-    updateFavoriteList();
+        // Update the frame list and favorites list in the UI to reflect the cleared data
+        updateFrameList([]);
+        updateFavoriteList();
 
-    // Send a message to the main plugin script to clear the data there as well
-    parent.postMessage({ pluginMessage: { type: "clearData" } }, "*");
-  };
+        // Send a message to the main plugin script to clear the data there as well
+        parent.postMessage({ pluginMessage: { type: "clearData" } }, "*");
+      };
+
+      // Function to handle the 'Show Page Name' toggle
+      // Assuming you have an input element with id="togglePageName" in your HTML
+      document
+        .getElementById("togglePageName")
+        .addEventListener("change", function (event) {
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "togglePageName",
+                value: event.target.checked, // Send the checked state of the checkbox to the plugin code
+              },
+            },
+            "*"
+          );
+        });
 
       window.onmessage = (event) => {
         const {
@@ -212,15 +237,23 @@
           historyData,
           currentFrameId,
           favorites: updatedFavorites,
+          value,
         } = event.data.pluginMessage;
-        if (type === "update") {
-          history = historyData;
-          currentIndex = historyData.findIndex(
-            (frame) => frame.id === currentFrameId
-          );
-          favorites = updatedFavorites;
-          updateFrameList(historyData, currentFrameId);
-          updateFavoriteList();
+        switch (type) {
+          case "update":
+            history = historyData;
+            currentIndex = historyData.findIndex(
+              (frame) => frame.id === currentFrameId
+            );
+            favorites = updatedFavorites;
+            updateFrameList(historyData, currentFrameId); // This will use the showPageName flag
+            updateFavoriteList(favorites);
+            break;
+          case "toggleShowPageName":
+            showPageName = value;
+            updateFrameList(history, currentIndex); // Update the frame list with the new toggle state
+            break;
+          // ... handle other types
         }
       };
     </script>

@@ -1,6 +1,7 @@
 let history = [];
 let currentIndex = -1;
 let favorites = [];
+let showPageName = true; // New variable to control the display of the page name
 
 function updatePluginData() {
   const data = { history, currentIndex, favorites };
@@ -35,10 +36,9 @@ function updateUI() {
       return node && page
         ? {
             id: node.id,
-            name:
-              node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
+            name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
             pageId: page.id,
-            pageName: page.name,
+            pageName: showPageName ? page.name : '', // Conditionally display the page name
             isSection: item.isSection || false,
           }
         : null;
@@ -164,7 +164,7 @@ figma.ui.onmessage = (msg) => {
       figma.root.setPluginData(
         "frameHopData",
         JSON.stringify({ history, currentIndex, favorites })
-      ); // Directly update storage
+      );
       updateUI();
       break;
     case "updateFavorites":
@@ -173,10 +173,19 @@ figma.ui.onmessage = (msg) => {
         name: fav.name,
         pageId: fav.pageId,
         pageName: fav.pageName,
-        isSection: fav.isSection, // Ensuring isSection is preserved
+        isSection: fav.isSection,
       }));
       updatePluginData();
       updateUI();
+      break;
+case "togglePageName":
+      showPageName = msg.value;
+      updatePluginData(); // Save the updated showPageName state
+      figma.ui.postMessage({ // Notify the UI to update the frame list
+        type: "toggleShowPageName",
+        value: showPageName
+      });
+      updateUI(); // Refresh the UI with the new state
       break;
   }
 };
