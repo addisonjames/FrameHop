@@ -158,6 +158,16 @@
       </span>
     </div>
 
+    <!-- Setting: Window Height -->
+<div class="settings-item">
+  Window Height
+  <select id="windowHeightSelect" class="window-height-select">
+    <option value="300">Small</option>
+    <option value="500" selected>Medium</option>
+    <option value="700">Large</option>
+  </select>
+</div>
+
     <!-- Setting: Toggle Page Names -->
     <div class="settings-item">
       Show Page Names
@@ -282,6 +292,21 @@
         );
       }
 
+      // This function resizes the plugin window height based on the content
+      function resizeWindowHeight() {
+        const newHeight = document.body.scrollHeight;
+        parent.postMessage(
+          { pluginMessage: { type: "resize", height: newHeight } },
+          "*"
+        );
+      }
+
+      // Call resizeWindowHeight whenever the DOM is updated
+      new MutationObserver(resizeWindowHeight).observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+
       // Function to handle the 'Clear Data' button click
       document.getElementById("clearData").onclick = function () {
         // Reset local history, currentIndex, and favorites
@@ -321,6 +346,11 @@
             "*"
           );
         });
+
+// Event Listener for changing the window height
+  document.getElementById("windowHeightSelect").addEventListener("change", function(event) {
+    parent.postMessage({ pluginMessage: { type: "resizeWindow", height: event.target.value } }, "*");
+  });
 
       // The window.onmessage listener handles messages sent from the plugin's main code.
       // It updates the plugin's UI in response to changes in the plugin's state or user interactions.

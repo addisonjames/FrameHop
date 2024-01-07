@@ -2,7 +2,7 @@ let history = [];
 let currentIndex = -1;
 let favorites = [];
 let showPageName = true; // Control the display of the page name
-let historyLength = 16; // Default history length
+let historyLength = 4; // Default history length
 
 function updatePluginData() {
   const data = { history, currentIndex, favorites };
@@ -206,6 +206,15 @@ figma.ui.onmessage = (msg) => {
         type: "updateHistoryLengthDisplay",
         historyLength: historyLength,
       });
+      break;
+    case "resizeWindow":
+      const height = parseInt(msg.height, 10);
+      figma.ui.resize(240, height); // Keep the width fixed and adjust the height
+      break;
+    // ... any other message types you handle
+    default:
+      // Optional: handle any unexpected messages
+      console.log("Received an unhandled message type:", msg.type);
       break;
   }
 };
