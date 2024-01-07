@@ -73,22 +73,73 @@
         cursor: pointer;
         margin-right: 4px; /* Adjust the space between the star and the frame name */
       }
+
+      /* New class for the settings title similar to History */
+      .settings-title {
+        font-size: 8pt; /* Adjust if needed */
+        font-weight: bold; /* Bold font */
+        color: #bfbfbf; /* White color text */
+        padding: 8px; /* Adjust padding as needed */
+        /* Add any additional styles you want for the settings title */
+      }
+
+      /* Class for settings options like 'Clear Data' and 'Show Page Names' */
+      .settings-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between; /* Keep items on each end */
+        height: 32px;
+        padding: 0 16px;
+        color: #ffffff; /* White color text */
+        cursor: pointer;
+        margin-bottom: 4px; /* Spacing between settings options, same as history item spacing */
+      }
+
+      /* Style for horizontal rule (divider) */
+      .settings-hr {
+        border: none;
+        height: 1px;
+        background-color: #444444; /* Divider color */
+        margin: 8px 0; /* Vertical spacing, adjust as needed */
+        width: 100%; /* Default width, can be adjusted as needed */
+      }
+
+      /* Style for the checkbox */
+      .styled-checkbox {
+        cursor: pointer;
+        /* Custom styles for the checkbox */
+      }
     </style>
   </head>
+
   <body>
+    <!-- Favorites -->
     <div class="eyebrow" id="favoriteFramesTitle">Favorites</div>
     <ul id="favoriteList"></ul>
 
+    <!-- History -->
     <div class="eyebrow">History</div>
     <ul id="frameList"></ul>
 
-    <div class="eyebrow" id="clearData" style="color: #bfbfbf; cursor: pointer">
-      Clear Data
+    <!-- Divider -->
+    <hr class="settings-hr" />
+
+    <!-- Settings -->
+    <div class="settings-title">Settings</div>
+
+    <!-- Settings: Toggle Page Names -->
+    <div class="settings-option">
+      Show Page Names
+      <input
+        type="checkbox"
+        id="togglePageName"
+        class="styled-checkbox"
+        checked
+      />
     </div>
 
-    <div class="eyebrow">Show Page Names</div>
-    <!-- The toggle for showing/hiding page names -->
-    <input type="checkbox" id="togglePageName" checked />
+    <!-- Settings: Clear Data -->
+    <div class="settings-option" id="clearData">Clear Data</div>
 
     <script>
       let history = [];
