@@ -1,7 +1,8 @@
 let history = [];
 let currentIndex = -1;
 let favorites = [];
-let showPageName = true; // New variable to control the display of the page name
+let showPageName = true; // Control the display of the page name
+let historyLength = 16; // Default history length
 
 function updatePluginData() {
   const data = { history, currentIndex, favorites };
@@ -28,7 +29,7 @@ function loadPluginData() {
 
 function updateUI() {
   const recentHistory = history
-    .slice(-16)
+    .slice(-historyLength)
     .reverse()
     .map((item) => {
       const node = figma.getNodeById(item.frameId);
@@ -151,6 +152,15 @@ function hopBackwards() {
   }
 }
 
+// New function to handle the cycling of history length
+function cycleHistoryLength() {
+  const lengths = [4, 8, 16, 20]; // Possible history lengths
+  let currentIndex = lengths.indexOf(historyLength); // Find the current index
+  historyLength = lengths[(currentIndex + 1) % lengths.length]; // Cycle to the next length
+  updatePluginData(); // Save the updated history length
+  updateUI(); // Update the UI with the new history length
+}
+
 // Message handling from the UI
 figma.ui.onmessage = (msg) => {
   switch (msg.type) {
@@ -186,6 +196,13 @@ case "togglePageName":
         value: showPageName
       });
       updateUI(); // Refresh the UI with the new state
+      break;
+      case "cycleHistoryLength":
+      cycleHistoryLength(); // Call the function when the message is received
+      figma.ui.postMessage({ // Notify the UI to update the history length display
+        type: "updateHistoryLengthDisplay",
+        historyLength: historyLength
+      });
       break;
   }
 };

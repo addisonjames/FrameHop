@@ -112,10 +112,21 @@
         margin-bottom: 4px; /* Spacing between settings options, same as history item spacing */
       }
 
-      /* Style for the checkbox */
+      /* Style for unchecked checkbox */
       .styled-checkbox {
+        accent-color: black; /* Set the color of the checkbox when it's unchecked */
+      }
+
+      /* Style for checked checkbox */
+      .styled-checkbox:checked {
+        accent-color: white; /* Set the color of the checkbox when it's checked */
+        background-color: black; /* Change background when checked */
+        border-color: black; /* Optional: if you want to change the border as well */
+      }
+
+      .history-length {
         cursor: pointer;
-        /* Custom styles for the checkbox */
+        /* Styles to make it look clickable and align it with the star/checkbox */
       }
     </style>
   </head>
@@ -138,7 +149,16 @@
     <!-- Settings -->
     <div class="settings-title">Settings</div>
 
-    <!-- Settings: Toggle Page Names -->
+    <!-- Setting: History Length -->
+    <div class="settings-item">
+      History Length
+      <span id="historyLengthDisplay" class="history-length">
+        <!-- Initial default value -->
+        16
+      </span>
+    </div>
+
+    <!-- Setting: Toggle Page Names -->
     <div class="settings-item">
       Show Page Names
       <input
@@ -149,7 +169,7 @@
       />
     </div>
 
-    <!-- Settings: Clear Data -->
+    <!-- Setting: Clear Data -->
     <div class="settings-item" id="clearData">Clear Data</div>
 
     <script>
@@ -277,8 +297,17 @@
         parent.postMessage({ pluginMessage: { type: "clearData" } }, "*");
       };
 
+      // Event listener for cycling history length
+      document
+        .getElementById("historyLengthDisplay")
+        .addEventListener("click", function () {
+          parent.postMessage(
+            { pluginMessage: { type: "cycleHistoryLength" } },
+            "*"
+          );
+        });
+
       // Function to handle the 'Show Page Name' toggle
-      // Assuming you have an input element with id="togglePageName" in your HTML
       document
         .getElementById("togglePageName")
         .addEventListener("change", function (event) {
@@ -293,6 +322,9 @@
           );
         });
 
+      // The window.onmessage listener handles messages sent from the plugin's main code.
+      // It updates the plugin's UI in response to changes in the plugin's state or user interactions.
+      // This includes updating the history list, toggling page name visibility, and changing history length settings.
       window.onmessage = (event) => {
         const {
           type,
@@ -300,7 +332,9 @@
           currentFrameId,
           favorites: updatedFavorites,
           value,
+          historyLength: newHistoryLength,
         } = event.data.pluginMessage;
+
         switch (type) {
           case "update":
             history = historyData;
@@ -311,11 +345,24 @@
             updateFrameList(historyData, currentFrameId); // This will use the showPageName flag
             updateFavoriteList(favorites);
             break;
+
           case "toggleShowPageName":
             showPageName = value;
             updateFrameList(history, currentIndex); // Update the frame list with the new toggle state
             break;
+
+          case "updateHistoryLengthDisplay":
+            // Update the UI with the new history length
+            document.getElementById("historyLengthDisplay").textContent =
+              newHistoryLength;
+            updateFrameList(history, currentIndex); // Optionally update the frame list if needed
+            break;
+
           // ... handle other types
+          default:
+            // It's a good practice to have a default case that does nothing or logs an unexpected message
+            console.log("Received an unhandled message type:", type);
+            break;
         }
       };
     </script>
