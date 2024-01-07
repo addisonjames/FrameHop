@@ -109,8 +109,8 @@
           frameName.textContent = frame.name;
 
           const truncatedPageName =
-            frame.pageName.length > 44
-              ? frame.pageName.substring(0, 41) + "..."
+            frame.pageName.length > 32
+              ? frame.pageName.substring(0, 29) + "..."
               : frame.pageName;
 
           const pageNameSpan = document.createElement("span");
