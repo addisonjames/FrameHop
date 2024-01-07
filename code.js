@@ -37,9 +37,10 @@ function updateUI() {
       return node && page
         ? {
             id: node.id,
-            name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
+            name:
+              node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
             pageId: page.id,
-            pageName: showPageName ? page.name : '', // Conditionally display the page name
+            pageName: showPageName ? page.name : "", // Conditionally display the page name
             isSection: item.isSection || false,
           }
         : null;
@@ -188,20 +189,22 @@ figma.ui.onmessage = (msg) => {
       updatePluginData();
       updateUI();
       break;
-case "togglePageName":
+    case "togglePageName":
       showPageName = msg.value;
       updatePluginData(); // Save the updated showPageName state
-      figma.ui.postMessage({ // Notify the UI to update the frame list
+      figma.ui.postMessage({
+        // Notify the UI to update the frame list
         type: "toggleShowPageName",
-        value: showPageName
+        value: showPageName,
       });
       updateUI(); // Refresh the UI with the new state
       break;
-      case "cycleHistoryLength":
+    case "cycleHistoryLength":
       cycleHistoryLength(); // Call the function when the message is received
-      figma.ui.postMessage({ // Notify the UI to update the history length display
+      figma.ui.postMessage({
+        // Notify the UI to update the history length display
         type: "updateHistoryLengthDisplay",
-        historyLength: historyLength
+        historyLength: historyLength,
       });
       break;
   }
