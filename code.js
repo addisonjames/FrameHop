@@ -38,7 +38,8 @@ function updateUI() {
   // Ensure the history array does not exceed the set history length
   history = history.slice(-historyLength);
 
-  const recentHistory = history.map((item) => {
+  // Reverse the history for display to show the most recent items first
+  const recentHistory = history.slice().reverse().map((item) => {
     const node = figma.getNodeById(item.frameId);
     const page = node ? figma.getNodeById(item.pageId) : null;
     return node && page
@@ -70,6 +71,7 @@ function updateUI() {
     favorites,
   });
 }
+
 
 function jumpToFrame(frameId) {
   let targetPage = null;
