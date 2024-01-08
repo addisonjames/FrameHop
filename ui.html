@@ -109,13 +109,14 @@
           height: 32px;
           padding: 0 16px;
           color: #bfbfbf; /* White color text */
-          cursor: pointer;
+          cursor: default;
           margin-bottom: 4px; /* Spacing between settings options, same as history item spacing */
         }
 
         /* Style for unchecked checkbox */
         .styled-checkbox {
           accent-color: black; /* Set the color of the checkbox when it's unchecked */
+          cursor: pointer;
         }
 
         /* Style for checked checkbox */
@@ -124,6 +125,11 @@
           background-color: black; /* Change background when checked */
           border-color: black; /* Optional: if you want to change the border as well */
         }
+
+#clearData {
+  cursor: pointer; /* Shows pointer cursor only when hovering over 'Clear Data' */
+}
+
 
         .history-length {
           cursor: pointer;
@@ -181,7 +187,9 @@
     </div>
 
     <!-- Setting: Clear Data -->
-    <div class="settings-item" id="clearData">Clear Data</div>
+    <div class="settings-item">
+      <span id="clearData">Clear Data</span>
+    </div>
 
     <!-- Resize Handle -->
     <div class="resize-handle">
@@ -254,45 +262,46 @@
         });
       }
 
-function updateFavoriteList() {
-  const list = document.getElementById("favoriteList");
-  list.innerHTML = "";
-  favorites.forEach((frame) => {
-    const listItem = document.createElement("li");
-    listItem.classList.add("favorite-item");
+      function updateFavoriteList() {
+        const list = document.getElementById("favoriteList");
+        list.innerHTML = "";
+        favorites.forEach((frame) => {
+          const listItem = document.createElement("li");
+          listItem.classList.add("favorite-item");
 
-    const star = document.createElement("span");
-    star.classList.add("favorite-star-icon");
-    star.textContent = "★";
+          const star = document.createElement("span");
+          star.classList.add("favorite-star-icon");
+          star.textContent = "★";
 
-    const frameName = document.createElement("span");
-    frameName.textContent = frame.name;
+          const frameName = document.createElement("span");
+          frameName.textContent = frame.name;
 
-    const pageNameSpan = document.createElement("span");
-    pageNameSpan.className = "page-name-style";
-    frameName.appendChild(pageNameSpan);
+          const pageNameSpan = document.createElement("span");
+          pageNameSpan.className = "page-name-style";
+          frameName.appendChild(pageNameSpan);
 
-    listItem.appendChild(star);
-    listItem.appendChild(frameName);
+          listItem.appendChild(star);
+          listItem.appendChild(frameName);
 
-    // Make only the area to the right of the star icon clickable
-    listItem.onclick = (event) => {
-      const starWidth = star.offsetWidth;
-      const clickX = event.clientX - frameName.getBoundingClientRect().left;
-      if (clickX > starWidth) {
-        jumpToFrame(frame.id, frame.pageId);
+          // Make only the area to the right of the star icon clickable
+          listItem.onclick = (event) => {
+            const starWidth = star.offsetWidth;
+            const clickX =
+              event.clientX - frameName.getBoundingClientRect().left;
+            if (clickX > starWidth) {
+              jumpToFrame(frame.id, frame.pageId);
+            }
+          };
+
+          // Add a click event for the star icon
+          star.onclick = (event) => {
+            event.stopPropagation(); // Prevent the row click event from triggering
+            toggleFavorite(frame, favorites);
+          };
+
+          list.appendChild(listItem);
+        });
       }
-    };
-
-    // Add a click event for the star icon
-    star.onclick = (event) => {
-      event.stopPropagation(); // Prevent the row click event from triggering
-      toggleFavorite(frame, favorites);
-    };
-
-    list.appendChild(listItem);
-  });
-}
 
       function toggleFavorite(frame, historyData = null) {
         const isFavorite = favorites.some((fav) => fav.id === frame.id);
