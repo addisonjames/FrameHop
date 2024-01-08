@@ -35,10 +35,8 @@ function loadPluginData() {
 }
 
 function updateUI() {
-  // Ensure the history array does not exceed the set history length
-  history = history.slice(-historyLength);
-
   // Reverse the history for display to show the most recent items first
+  // Note: The history array itself is already managed to have the most recent items at the end.
   const recentHistory = history.slice().reverse().map((item) => {
     const node = figma.getNodeById(item.frameId);
     const page = node ? figma.getNodeById(item.pageId) : null;
@@ -71,7 +69,6 @@ function updateUI() {
     favorites,
   });
 }
-
 
 function jumpToFrame(frameId) {
   let targetPage = null;
@@ -174,9 +171,9 @@ function cycleHistoryLength() {
   let currentLengthIndex = lengths.indexOf(historyLength);
   historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
 
-  // Keep the most recent frames, which we assume to be at the beginning of the array
+  // Correctly adjust the history array if it's longer than the new historyLength
   if (history.length > historyLength) {
-    history = history.slice(0, historyLength); // Slice from the start to keep the newest
+    history = history.slice(-historyLength);
   }
 
   updatePluginData(); // Save the updated history and history length
