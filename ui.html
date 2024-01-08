@@ -134,7 +134,7 @@
         cursor: pointer;
         /* Styles to make it look clickable and align it with the star/checkbox */
       }
-      
+
       /* Style for resize handle */
       .resize-handle {
         position: fixed;
@@ -278,49 +278,49 @@
         });
       }
 
-function updateFavoriteList(favorites, currentFavoriteIndex) {
-  const list = document.getElementById("favoriteList");
-  list.innerHTML = "";
-  favorites.forEach((frame, index) => {
-    const listItem = document.createElement("li");
-    listItem.classList.add("favorite-item");
+      function updateFavoriteList(favorites, currentFavoriteIndex) {
+        const list = document.getElementById("favoriteList");
+        list.innerHTML = "";
+        favorites.forEach((frame, index) => {
+          const listItem = document.createElement("li");
+          listItem.classList.add("favorite-item");
 
-    const star = document.createElement("span");
-    star.classList.add("favorite-star-icon");
-    star.textContent = "★";
-    listItem.appendChild(star);
+          const star = document.createElement("span");
+          star.classList.add("favorite-star-icon");
+          star.textContent = "★";
+          listItem.appendChild(star);
 
-    const frameName = document.createElement("span");
-    frameName.textContent = frame.name;
-    listItem.appendChild(frameName);
+          const frameName = document.createElement("span");
+          frameName.textContent = frame.name;
+          listItem.appendChild(frameName);
 
-    // Apply the highlight based on currentFavoriteIndex
-    if (currentFavoriteIndex === index) {
-      listItem.style.backgroundColor = "#4D5875"; // Highlight color
-    }
+          // Apply the highlight based on currentFavoriteIndex
+          if (currentFavoriteIndex === index) {
+            listItem.style.backgroundColor = "#4D5875"; // Highlight color
+          }
 
-    listItem.onclick = (event) => {
-      const starWidth = star.offsetWidth;
-      const clickX = event.clientX - listItem.getBoundingClientRect().left;
-      if (clickX > starWidth) {
-        jumpToFrame(frame.id, frame.pageId);
-        // Update the current favorite index and re-render the list
-        currentFavoriteIndex = index; // Update the index
-        updateFavoriteList(favorites, currentFavoriteIndex); // Re-render the list with new index
+          listItem.onclick = (event) => {
+            const starWidth = star.offsetWidth;
+            const clickX =
+              event.clientX - listItem.getBoundingClientRect().left;
+            if (clickX > starWidth) {
+              jumpToFrame(frame.id, frame.pageId);
+              // Update the current favorite index and re-render the list
+              currentFavoriteIndex = index; // Update the index
+              updateFavoriteList(favorites, currentFavoriteIndex); // Re-render the list with new index
+            }
+          };
+
+          // Add a click event for the star icon
+          star.onclick = (event) => {
+            event.stopPropagation(); // Prevent the row click event from triggering
+            toggleFavorite(frame);
+            updateFavoriteList(favorites, currentFavoriteIndex); // Update the list to reflect the change
+          };
+
+          list.appendChild(listItem);
+        });
       }
-    };
-
-    // Add a click event for the star icon
-    star.onclick = (event) => {
-      event.stopPropagation(); // Prevent the row click event from triggering
-      toggleFavorite(frame);
-      updateFavoriteList(favorites, currentFavoriteIndex); // Update the list to reflect the change
-    };
-
-    list.appendChild(listItem);
-  });
-}
-
 
       function toggleFavorite(frame, historyData = null) {
         const isFavorite = favorites.some((fav) => fav.id === frame.id);
@@ -381,7 +381,7 @@ function updateFavoriteList(favorites, currentFavoriteIndex) {
             {
               pluginMessage: {
                 type: "togglePageName",
-                value: event.target.checked, // Send the checked state of the checkbox to the plugin code
+                value: event.target.checked,
               },
             },
             "*"
@@ -426,7 +426,7 @@ function updateFavoriteList(favorites, currentFavoriteIndex) {
         }
       };
 
-let currentFavoriteIndex; // Declare this variable outside the window.onmessage handler
+      let currentFavoriteIndex; // Declare this variable outside the window.onmessage handler
 
 window.onmessage = (event) => {
   const {
@@ -436,32 +436,42 @@ window.onmessage = (event) => {
     favorites: updatedFavorites,
     showPageName: newShowPageName,
     historyLength: newHistoryLength,
-    currentFavoriteIndex, // Add this line to destructure the message data
+    currentFavoriteIndex
   } = event.data.pluginMessage;
 
   switch (type) {
+        case "dataCleared":
+      // Clear UI components
+      document.getElementById("favoriteList").innerHTML = "";
+      document.getElementById("frameList").innerHTML = "";
+      // Reset any other UI elements that display data
+      document.getElementById("togglePageName").checked = true; // Reset to default if needed
+      // More UI reset logic if necessary...
+      break;
+    case "update":
     case "update":
       history = historyData;
       currentIndex = historyData.findIndex(
         (frame) => frame.id === currentFrameId
       );
       favorites = updatedFavorites;
-      updateFrameList(historyData, currentFrameId); // This will use the showPageName flag
-      updateFavoriteList(favorites, currentFavoriteIndex); // Pass currentFavoriteIndex to the function
+      updateFrameList(historyData, currentFrameId);
+      updateFavoriteList(favorites, currentFavoriteIndex);
       break;
 
     case "toggleShowPageName":
-      // Update the UI with the new toggle state
+      // This case is triggered when the state changes are sent from the plugin code
       document.getElementById("togglePageName").checked = newShowPageName;
+      // Also, make sure to update the UI elements if needed
       updateFrameList(history, currentIndex);
-      updateFavoriteList(favorites, currentFavoriteIndex); // Ensure favorites are updated with the current index
+      updateFavoriteList(favorites, currentFavoriteIndex);
       break;
 
     case "updateHistoryLengthDisplay":
       document.getElementById("historyLengthDisplay").textContent =
         newHistoryLength;
       updateFrameList(history, currentIndex);
-      updateFavoriteList(favorites, currentFavoriteIndex); // Ensure favorites are updated with the current index
+      updateFavoriteList(favorites, currentFavoriteIndex);
       break;
 
     case "loadSettings":
@@ -470,8 +480,14 @@ window.onmessage = (event) => {
       document.getElementById("historyLengthDisplay").textContent =
         newHistoryLength;
       updateFrameList(history, currentIndex);
-      updateFavoriteList(favorites, currentFavoriteIndex); // Ensure favorites are updated with the current index
+      updateFavoriteList(favorites, currentFavoriteIndex);
       break;
+
+        case "showPageNameUpdated":
+      // This message should be sent from code.js after the showPageName state is updated
+      document.getElementById("togglePageName").checked = newShowPageName;
+      break;
+
 
     default:
       console.log("Received an unhandled message type:", type);

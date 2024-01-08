@@ -97,7 +97,12 @@ function updateUI() {
   const currentPageId = figma.currentPage.id;
 
   console.log("updateUI - Recent history for UI:", recentHistory);
-
+  // Check if data is cleared and send a message to the UI to reset if needed
+  if (history.length === 0 && currentIndex === -1 && favorites.length === 0) {
+    figma.ui.postMessage({
+      type: "dataCleared"
+    });
+  } else {
   // Post the updated recent history and other details to the UI
   figma.ui.postMessage({
     type: "update",
@@ -105,8 +110,10 @@ function updateUI() {
     currentFrameId,
     currentPageId,
     favorites,
-    currentFavoriteIndex: currentFavoriteIndex // Add this line
+    currentFavoriteIndex: currentFavoriteIndex,
+    showPageName: showPageName,
   });
+}
 }
 
 function jumpToFrame(frameId) {
@@ -129,8 +136,8 @@ function jumpToFrame(frameId) {
     // Update currentIndex to the index of the frame that was just selected
     currentIndex = history.findIndex((item) => item.frameId === frameId);
 
-  // Update currentFavoriteIndex for the selected frame
-  currentFavoriteIndex = favorites.findIndex(item => item.id === frameId);
+    // Update currentFavoriteIndex for the selected frame
+    currentFavoriteIndex = favorites.findIndex((item) => item.id === frameId);
 
     console.log("Jumped to Frame:", frameId, "on Page:", targetPage.name);
   } else {
@@ -166,7 +173,7 @@ function updateHistory() {
         currentIndex = itemIndex;
       }
       // Update currentFavoriteIndex for the selected frame
-      currentFavoriteIndex = favorites.findIndex(item => item.id === itemId);
+      currentFavoriteIndex = favorites.findIndex((item) => item.id === itemId);
       console.log("updateHistory - currentIndex:", currentIndex);
     }
   } else {
@@ -241,6 +248,8 @@ figma.ui.onmessage = (msg) => {
       history = [];
       currentIndex = -1;
       favorites = [];
+      currentFavoriteIndex = -1;
+      // Clear plugin data from Figma's storage
       figma.root.setPluginData(
         "frameHopData",
         JSON.stringify({ history, currentIndex, favorites })
@@ -260,10 +269,10 @@ figma.ui.onmessage = (msg) => {
       break;
     case "togglePageName":
       showPageName = msg.value;
-      updatePluginData(); // Save the settings when toggled
+      updatePluginData();
       figma.ui.postMessage({
-        type: "toggleShowPageName",
-        value: showPageName,
+        type: "showPageNameUpdated",
+        showPageName: showPageName,
       });
       updateUI();
       break;
