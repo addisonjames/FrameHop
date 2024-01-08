@@ -37,24 +37,20 @@ function loadPluginData() {
 function updateUI() {
   // Ensure the history array does not exceed the set history length
   history = history.slice(-historyLength);
-  console.log("updateUI - Truncated history array:", history);
-  const recentHistory = history
-    .reverse()
-    .map((item) => {
-      const node = figma.getNodeById(item.frameId);
-      const page = node ? figma.getNodeById(item.pageId) : null;
-      return node && page
-        ? {
-            id: node.id,
-            name:
-              node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
-            pageId: page.id,
-            pageName: showPageName ? page.name : "",
-            isSection: item.isSection || false,
-          }
-        : null;
-    })
-    .filter((node) => node !== null);
+
+  const recentHistory = history.map((item) => {
+    const node = figma.getNodeById(item.frameId);
+    const page = node ? figma.getNodeById(item.pageId) : null;
+    return node && page
+      ? {
+          id: node.id,
+          name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
+          pageId: page.id,
+          pageName: showPageName ? page.name : "",
+          isSection: item.isSection || false,
+        }
+      : null;
+  }).filter((node) => node !== null);
 
   const currentFrameId =
     figma.currentPage.selection.length > 0
@@ -62,6 +58,8 @@ function updateUI() {
       : null;
 
   const currentPageId = figma.currentPage.id;
+
+  console.log("updateUI - Recent history for UI:", recentHistory);
 
   // Post the updated recent history and other details to the UI
   figma.ui.postMessage({
@@ -112,16 +110,20 @@ function updateHistory() {
       const isSection = itemType === "SECTION";
       const item = { frameId: itemId, pageId: pageId, isSection: isSection };
 
-      history = history.filter((h) => h.frameId !== itemId); // Remove duplicate
-      history.push(item); // Add new item to the end
+      // Remove the item if it's already in history
+      history = history.filter(h => h.frameId !== itemId);
+      // Add the new item to the start of the array
+      history.unshift(item);
 
-      // Truncate history if it exceeds the set length
+      // Ensure we only keep the most recent 'historyLength' items
       if (history.length > historyLength) {
-        history = history.slice(-historyLength);
+        history = history.slice(0, historyLength); // Truncate history from the start
       }
 
-      currentIndex = history.length - 1;
-            console.log("updateHistory - Updated history array:", history);
+      currentIndex = 0; // Reset currentIndex since we're always adding at the start
+
+      console.log("updateHistory - Updated history array:", history);
+
       updatePluginData();
     }
   }
@@ -165,14 +167,15 @@ function cycleHistoryLength() {
   let currentLengthIndex = lengths.indexOf(historyLength);
   historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
 
-  // Truncate the history to the new length
+  // Keep the most recent frames, which we assume to be at the beginning of the array
   if (history.length > historyLength) {
-    history = history.slice(-historyLength);
+    history = history.slice(0, historyLength); // Slice from the start to keep the newest
   }
-  console.log("cycleHistoryLength - New history length:", historyLength, "History array:", history);
+
   updatePluginData(); // Save the updated history and history length
   updateUI(); // Update the UI with the new history
 }
+
 
 figma.ui.onmessage = (msg) => {
   switch (msg.type) {
