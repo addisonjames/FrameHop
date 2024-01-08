@@ -128,6 +128,16 @@
         cursor: pointer;
         /* Styles to make it look clickable and align it with the star/checkbox */
       }
+            /* Style for resize handle */
+      .resize-handle {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 20px;
+        height: 20px;
+        cursor: nwse-resize;
+      }
+    </style
     </style>
   </head>
 
@@ -171,6 +181,13 @@
 
     <!-- Setting: Clear Data -->
     <div class="settings-item" id="clearData">Clear Data</div>
+
+        <!-- Resize Handle -->
+    <div class="resize-handle">
+        <svg width="20" height="20" viewBox="0 0 20 20">
+            <path d="M0,20 L20,20 L20,0" fill="none" stroke="black" stroke-width="2"/>
+        </svg>
+    </div>
 
     <script>
       let history = [];
@@ -325,46 +342,79 @@
       // The window.onmessage listener handles messages sent from the plugin's main code.
       // It updates the plugin's UI in response to changes in the plugin's state or user interactions.
       // This includes updating the history list, toggling page name visibility, and changing history length settings.
-      window.onmessage = (event) => {
-        const {
-          type,
-          historyData,
-          currentFrameId,
-          favorites: updatedFavorites,
-          value,
-          historyLength: newHistoryLength,
-        } = event.data.pluginMessage;
-
-        switch (type) {
-          case "update":
-            history = historyData;
-            currentIndex = historyData.findIndex(
-              (frame) => frame.id === currentFrameId
-            );
-            favorites = updatedFavorites;
-            updateFrameList(historyData, currentFrameId); // This will use the showPageName flag
-            updateFavoriteList(favorites);
-            break;
-
-          case "toggleShowPageName":
-            showPageName = value;
-            updateFrameList(history, currentIndex); // Update the frame list with the new toggle state
-            break;
-
-          case "updateHistoryLengthDisplay":
-            // Update the UI with the new history length
-            document.getElementById("historyLengthDisplay").textContent =
-              newHistoryLength;
-            updateFrameList(history, currentIndex); // Optionally update the frame list if needed
-            break;
-
-          // ... handle other types
-          default:
-            // It's a good practice to have a default case that does nothing or logs an unexpected message
-            console.log("Received an unhandled message type:", type);
-            break;
-        }
+      window.onload = () => {
+  // Resize handle logic
+  const resizeHandle = document.querySelector('.resize-handle');
+  resizeHandle.addEventListener('mousedown', (event) => {
+      window.onmousemove = handleMouseMove;
+      window.onmouseup = () => {
+          window.onmousemove = null;
+          window.onmouseup = null;
       };
+  });
+
+function handleMouseMove(event) {
+    const minWidth = 100; // Set a minimum width
+    const minHeight = 100; // Set a minimum height
+
+    let newWidth = window.innerWidth + event.movementX;
+    let newHeight = window.innerHeight + event.movementY;
+
+    // Ensure the new width and height are not less than the minimum
+    newWidth = Math.max(newWidth, minWidth);
+    newHeight = Math.max(newHeight, minHeight);
+
+    parent.postMessage({
+        pluginMessage: {
+            type: 'resize',
+            width: newWidth,
+            height: newHeight
+        }
+    }, '*');
+}
+};
+
+window.onmessage = (event) => {
+  const {
+    type,
+    historyData,
+    currentFrameId,
+    favorites: updatedFavorites,
+    value,
+    historyLength: newHistoryLength,
+  } = event.data.pluginMessage;
+
+  switch (type) {
+    case "update":
+      history = historyData;
+      currentIndex = historyData.findIndex(
+        (frame) => frame.id === currentFrameId
+      );
+      favorites = updatedFavorites;
+      updateFrameList(historyData, currentFrameId); // This will use the showPageName flag
+      updateFavoriteList(favorites);
+      break;
+
+    case "toggleShowPageName":
+      showPageName = value;
+      updateFrameList(history, currentIndex); // Update the frame list with the new toggle state
+      break;
+
+    case "updateHistoryLengthDisplay":
+      // Update the UI with the new history length
+      document.getElementById("historyLengthDisplay").textContent =
+        newHistoryLength;
+      updateFrameList(history, currentIndex); // Optionally update the frame list if needed
+      break;
+
+    // ... handle other types
+    default:
+      // It's a good practice to have a default case that does nothing or logs an unexpected message
+      console.log("Received an unhandled message type:", type);
+      break;
+  }
+};
+
     </script>
   </body>
 </html>
