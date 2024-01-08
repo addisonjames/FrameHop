@@ -35,9 +35,11 @@ function loadPluginData() {
 }
 
 function updateUI() {
+  // Slice the history array to respect the historyLength setting
+  const limitedHistory = history.slice(-historyLength);
+
   // Reverse the history for display to show the most recent items first
-  // Note: The history array itself is already managed to have the most recent items at the end.
-  const recentHistory = history.slice().reverse().map((item) => {
+  const recentHistory = limitedHistory.reverse().map((item) => {
     const node = figma.getNodeById(item.frameId);
     const page = node ? figma.getNodeById(item.pageId) : null;
     return node && page
@@ -69,6 +71,7 @@ function updateUI() {
     favorites,
   });
 }
+
 
 function jumpToFrame(frameId) {
   let targetPage = null;
