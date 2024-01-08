@@ -11,7 +11,6 @@ function updatePluginData() {
 
 function loadPluginData() {
   const data = figma.root.getPluginData("frameHopData");
-  // Debug logs to check what data is being loaded
   console.log("loadPluginData - Loaded data:", data);
 
   if (data) {
@@ -25,6 +24,13 @@ function loadPluginData() {
     favorites = [];
   }
   updateUI();
+
+  // Restore window size
+  figma.clientStorage.getAsync("frameHopWindowSize").then((size) => {
+    if (size) {
+      figma.ui.resize(size.width, size.height);
+    }
+  });
 }
 
 function updateUI() {
@@ -40,7 +46,7 @@ function updateUI() {
             name:
               node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
             pageId: page.id,
-            pageName: showPageName ? page.name : "", // Conditionally display the page name
+            pageName: showPageName ? page.name : "",
             isSection: item.isSection || false,
           }
         : null;
@@ -62,7 +68,6 @@ function updateUI() {
   });
 }
 
-// Function to jump to a specific frame
 function jumpToFrame(frameId) {
   let targetPage = null;
   let targetFrame = null;
@@ -86,7 +91,6 @@ function jumpToFrame(frameId) {
   updateUI();
 }
 
-// Function to record the frame ID and page ID when a new frame is selected
 function updateHistory() {
   const currentSelection = figma.currentPage.selection;
   if (currentSelection.length > 0) {
@@ -119,7 +123,6 @@ function updateHistory() {
   updateUI();
 }
 
-// Handle hopping forwards in history
 function hopForwards() {
   console.log(
     "Before Hop Forwards: currentIndex =",
@@ -136,7 +139,6 @@ function hopForwards() {
   }
 }
 
-// Handle hopping backwards in history
 function hopBackwards() {
   console.log(
     "Before Hop Backwards: currentIndex =",
@@ -153,16 +155,14 @@ function hopBackwards() {
   }
 }
 
-// New function to handle the cycling of history length
 function cycleHistoryLength() {
-  const lengths = [4, 8, 16, 20]; // Possible history lengths
-  let currentIndex = lengths.indexOf(historyLength); // Find the current index
-  historyLength = lengths[(currentIndex + 1) % lengths.length]; // Cycle to the next length
-  updatePluginData(); // Save the updated history length
-  updateUI(); // Update the UI with the new history length
+  const lengths = [4, 8, 16, 20];
+  let currentIndex = lengths.indexOf(historyLength);
+  historyLength = lengths[(currentIndex + 1) % lengths.length];
+  updatePluginData();
+  updateUI();
 }
 
-// Message handling from the UI
 figma.ui.onmessage = (msg) => {
   switch (msg.type) {
     case "jumpToFrame":
@@ -191,26 +191,28 @@ figma.ui.onmessage = (msg) => {
       break;
     case "togglePageName":
       showPageName = msg.value;
-      updatePluginData(); // Save the updated showPageName state
+      updatePluginData();
       figma.ui.postMessage({
-        // Notify the UI to update the frame list
         type: "toggleShowPageName",
         value: showPageName,
       });
-      updateUI(); // Refresh the UI with the new state
+      updateUI();
       break;
     case "cycleHistoryLength":
-      cycleHistoryLength(); // Call the function when the message is received
+      cycleHistoryLength();
       figma.ui.postMessage({
-        // Notify the UI to update the history length display
         type: "updateHistoryLengthDisplay",
         historyLength: historyLength,
       });
       break;
+    case "resize":
+      const { width, height } = msg;
+      figma.ui.resize(width, height);
+      figma.clientStorage.setAsync("frameHopWindowSize", { width, height });
+      break;
   }
 };
 
-// Command handling
 if (figma.command === "openFrameHop") {
   figma.showUI(__html__, { width: 240, height: 360 });
   loadPluginData();
@@ -228,7 +230,6 @@ if (figma.command === "openFrameHop") {
   }
 }
 
-// Ensure the UI is updated with current frame selection
 figma.on("selectionchange", updateHistory);
 if (figma.currentPage.selection.length > 0) {
   updateHistory();
