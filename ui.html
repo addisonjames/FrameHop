@@ -329,11 +329,12 @@
       document
         .getElementById("togglePageName")
         .addEventListener("change", function (event) {
+          // Send the checked state of the checkbox to the plugin code
           parent.postMessage(
             {
               pluginMessage: {
                 type: "togglePageName",
-                value: event.target.checked, // Send the checked state of the checkbox to the plugin code
+                newShowPageName: event.target.checked,
               },
             },
             "*"
@@ -384,8 +385,8 @@
           historyData,
           currentFrameId,
           favorites: updatedFavorites,
-          showPageName: newShowPageName,
-          historyLength: newHistoryLength,
+          showPageName, // Use the actual property name without renaming
+          historyLength, // Use the actual property name without renaming
         } = event.data.pluginMessage;
 
         switch (type) {
@@ -400,7 +401,7 @@
             break;
 
           case "toggleShowPageName":
-            showPageName = value;
+            showPageName = newShowPageName;
             updateFrameList(history, currentIndex); // Update the frame list with the new toggle state
             break;
 
@@ -411,12 +412,27 @@
             break;
 
           case "loadSettings":
-            // Update the UI with the initial settings when the plugin is reloaded
-            document.getElementById("togglePageName").checked = newShowPageName;
+            // Check if the settings are defined in the incoming message
+            if (typeof event.data.pluginMessage.showPageName === "boolean") {
+              showPageName = event.data.pluginMessage.showPageName;
+            }
+            if (typeof event.data.pluginMessage.historyLength === "number") {
+              historyLength = event.data.pluginMessage.historyLength;
+            }
+
+            // Update the UI elements with the received settings
+            document.getElementById("togglePageName").checked = showPageName;
             document.getElementById("historyLengthDisplay").textContent =
-              newHistoryLength;
-            updateFrameList(history, currentIndex);
-            updateFavoriteList(favorites);
+              historyLength.toString();
+
+            // Call functions to update the UI based on these settings
+            updateFrameList(history, currentIndex); // Assumed to be a function that refreshes the frame list UI
+            updateFavoriteList(favorites); // Assumed to be a function that refreshes the favorites list UI
+            break;
+
+          case "updateShowPageName":
+            document.getElementById("togglePageName").checked =
+              event.data.pluginMessage.newShowPageName;
             break;
 
           default:

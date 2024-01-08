@@ -57,12 +57,13 @@ function loadPluginData() {
   });
 
   updateUI();
+
   // Send the initial settings to the UI when the plugin is reloaded
-  figma.ui.postMessage({
-    type: "loadSettings",
-    showPageName: showPageName,
-    historyLength: historyLength,
-  });
+figma.ui.postMessage({
+  type: "loadSettings",
+  showPageName: showPageName, // Changed to match the expected property name in ui.html
+  historyLength: historyLength, // Added this to match the expected property name in ui.html
+});
 }
 
 function updateUI() {
@@ -247,16 +248,29 @@ figma.ui.onmessage = (msg) => {
       updateUI();
       break;
     case "togglePageName":
-      showPageName = msg.value;
-      updatePluginData(); // Save the settings when toggled
+      showPageName = msg.newShowPageName; // Use the property name sent from the UI
+      updatePluginData(); // Save the settings
+      updateUI(); // Update the UI
+      // Immediately send the update back to the UI
       figma.ui.postMessage({
-        type: "toggleShowPageName",
-        value: showPageName,
+        type: "updateShowPageName",
+        newShowPageName: showPageName,
       });
-      updateUI();
       break;
     case "cycleHistoryLength":
-      cycleHistoryLength(); // This function now should call updatePluginData internally
+      let nextLengthIndex =
+        (lengths.indexOf(historyLength) + 1) % lengths.length;
+      historyLength = lengths[nextLengthIndex];
+      if (history.length > historyLength) {
+        history = history.slice(-historyLength);
+      }
+      updatePluginData(); // Save the settings
+      updateUI(); // Update the UI
+      // Send the new history length to the UI
+      figma.ui.postMessage({
+        type: "updateHistoryLengthDisplay",
+        historyLength: historyLength,
+      });
       break;
     case "resize":
       const { width, height } = msg;
