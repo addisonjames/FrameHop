@@ -400,7 +400,7 @@
             break;
 
           case "toggleShowPageName":
-            showPageName = value;
+            // Used to have showPageName = value; but value isn't anything and was just throwing an error, so I removed. 
             updateFrameList(history, currentIndex); // Update the frame list with the new toggle state
             break;
 
