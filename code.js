@@ -99,6 +99,7 @@ function jumpToFrame(frameId) {
 }
 
 
+// Function to record the frame ID and page ID when a new frame is selected
 function updateHistory() {
   const currentSelection = figma.currentPage.selection;
   if (currentSelection.length > 0) {
@@ -113,20 +114,18 @@ function updateHistory() {
       const itemId = selectedItem.id;
       const pageId = selectedItem.parent.id;
       const isSection = itemType === "SECTION";
-      const newItem = { frameId: itemId, pageId: pageId, isSection: isSection };
+      const item = { frameId: itemId, pageId: pageId, isSection: isSection };
 
-      // Check if the selected item is already in history
-      const existingIndex = history.findIndex(item => item.frameId === itemId);
-      if (existingIndex === -1) {
-        // If it's not in history, add it and update currentIndex
-        history.unshift(newItem);
-        currentIndex = 0; // New item is now at the top
+      const itemIndex = history.findIndex(
+        (h) => h.frameId === itemId && h.pageId === pageId
+      );
+      if (itemIndex === -1) {
+        history.push(item);
+        currentIndex = history.length - 1;
       } else {
-        // If it's already in history, just update currentIndex
-        currentIndex = existingIndex;
+        currentIndex = itemIndex;
       }
-
-      console.log("updateHistory - currentIndex:", currentIndex, "History:", history);
+      console.log("updateHistory - currentIndex:", currentIndex);
       updatePluginData();
     }
   }
