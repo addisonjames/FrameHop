@@ -384,7 +384,7 @@
           historyData,
           currentFrameId,
           favorites: updatedFavorites,
-          value,
+          showPageName: newShowPageName,
           historyLength: newHistoryLength,
         } = event.data.pluginMessage;
 
@@ -405,15 +405,21 @@
             break;
 
           case "updateHistoryLengthDisplay":
-            // Update the UI with the new history length
             document.getElementById("historyLengthDisplay").textContent =
               newHistoryLength;
             updateFrameList(history, currentIndex); // Optionally update the frame list if needed
             break;
 
-          // ... handle other types
+          case "loadSettings":
+            // Update the UI with the initial settings when the plugin is reloaded
+            document.getElementById("togglePageName").checked = newShowPageName;
+            document.getElementById("historyLengthDisplay").textContent =
+              newHistoryLength;
+            updateFrameList(history, currentIndex);
+            updateFavoriteList(favorites);
+            break;
+
           default:
-            // It's a good practice to have a default case that does nothing or logs an unexpected message
             console.log("Received an unhandled message type:", type);
             break;
         }

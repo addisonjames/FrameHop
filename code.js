@@ -27,10 +27,13 @@ function loadPluginData() {
     history = parsedData.history || [];
     currentIndex = parsedData.currentIndex || -1;
     favorites = parsedData.favorites || [];
-    
+
     // Load and apply settings
     if (parsedData.settings) {
-      showPageName = parsedData.settings.showPageName !== undefined ? parsedData.settings.showPageName : showPageName;
+      showPageName =
+        parsedData.settings.showPageName !== undefined
+          ? parsedData.settings.showPageName
+          : showPageName;
       historyLength = parsedData.settings.historyLength || historyLength;
     }
   } else {
@@ -39,8 +42,13 @@ function loadPluginData() {
     favorites = [];
     // Default settings can be set here if needed
   }
-  console.log("History and Settings after loading data:", history, showPageName, historyLength); // Console log for debugging
-  
+  console.log(
+    "History and Settings after loading data:",
+    history,
+    showPageName,
+    historyLength
+  ); // Console log for debugging
+
   // Restore window size
   figma.clientStorage.getAsync("frameHopWindowSize").then((size) => {
     if (size) {
@@ -49,8 +57,13 @@ function loadPluginData() {
   });
 
   updateUI();
+  // Send the initial settings to the UI when the plugin is reloaded
+  figma.ui.postMessage({
+    type: "loadSettings",
+    showPageName: showPageName,
+    historyLength: historyLength,
+  });
 }
-
 
 function updateUI() {
   // Slice the history array to respect the historyLength setting
@@ -197,8 +210,14 @@ function cycleHistoryLength() {
     history = history.slice(-historyLength);
   }
 
-  updatePluginData(); // Also save the updated historyLength setting
+  updatePluginData(); // Save the updated history length setting
   updateUI();
+
+  // Send a message to the UI to update the history length display
+  figma.ui.postMessage({
+    type: "updateHistoryLengthDisplay",
+    historyLength: historyLength,
+  });
 }
 
 figma.ui.onmessage = (msg) => {
