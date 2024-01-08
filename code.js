@@ -134,7 +134,8 @@ function updateHistory() {
 }
 
 
-function hopForwards() {
+// Handle hopping forwards in history
+function hopBackwards() {
   console.log(
     "Before Hop Forwards: currentIndex =",
     currentIndex,
@@ -146,11 +147,12 @@ function hopForwards() {
     currentIndex += 1;
     jumpToFrame(history[currentIndex].frameId);
     updatePluginData();
-    console.log("After Hop Forwards: currentIndex =", currentIndex);
+    console.log("After Hop Backwards: currentIndex =", currentIndex);
   }
 }
 
-function hopBackwards() {
+// Handle hopping backwards in history
+function hopForwards() {
   console.log(
     "Before Hop Backwards: currentIndex =",
     currentIndex,
@@ -162,7 +164,7 @@ function hopBackwards() {
     currentIndex -= 1;
     jumpToFrame(history[currentIndex].frameId);
     updatePluginData();
-    console.log("After Hop Backwards: currentIndex =", currentIndex);
+    console.log("After Hop Forwards: currentIndex =", currentIndex);
   }
 }
 
