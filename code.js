@@ -232,6 +232,7 @@ figma.ui.onmessage = (msg) => {
   }
 };
 
+// Command handling
 if (figma.command === "openFrameHop") {
   figma.showUI(__html__, { width: 240, height: 360 });
   loadPluginData();
