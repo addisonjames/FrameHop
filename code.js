@@ -3,6 +3,7 @@ let currentIndex = -1;
 let favorites = [];
 let showPageName = true; // Control the display of the page name
 let historyLength = 16; // Default history length
+let currentFavoriteIndex = -1;
 
 function updatePluginData() {
   const data = {
@@ -104,6 +105,7 @@ function updateUI() {
     currentFrameId,
     currentPageId,
     favorites,
+    currentFavoriteIndex: currentFavoriteIndex // Add this line
   });
 }
 
@@ -126,6 +128,9 @@ function jumpToFrame(frameId) {
 
     // Update currentIndex to the index of the frame that was just selected
     currentIndex = history.findIndex((item) => item.frameId === frameId);
+
+  // Update currentFavoriteIndex for the selected frame
+  currentFavoriteIndex = favorites.findIndex(item => item.id === frameId);
 
     console.log("Jumped to Frame:", frameId, "on Page:", targetPage.name);
   } else {
@@ -160,12 +165,19 @@ function updateHistory() {
       } else {
         currentIndex = itemIndex;
       }
+      // Update currentFavoriteIndex for the selected frame
+      currentFavoriteIndex = favorites.findIndex(item => item.id === itemId);
       console.log("updateHistory - currentIndex:", currentIndex);
-      updatePluginData();
     }
+  } else {
+    // Reset currentFavoriteIndex if nothing is selected
+    currentFavoriteIndex = -1;
   }
+  updatePluginData();
   updateUI();
 }
+
+figma.on("selectionchange", updateHistory);
 
 // Handle hopping forwards in history
 function hopForwards() {
