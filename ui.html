@@ -210,6 +210,13 @@
           const listItem = document.createElement("li");
           listItem.classList.add("history-item");
 
+          // Make the entire row clickable, excluding the star icon
+          listItem.onclick = (event) => {
+            if (!event.target.classList.contains("star-icon")) {
+              jumpToFrame(frame.id, frame.pageId);
+            }
+          };
+
           const frameName = document.createElement("span");
           frameName.textContent = frame.name;
           listItem.appendChild(frameName);
@@ -400,7 +407,7 @@
             break;
 
           case "toggleShowPageName":
-            // Used to have showPageName = value; but value isn't anything and was just throwing an error, so I removed. 
+            // Used to have showPageName = value; but value isn't anything and was just throwing an error, so I removed.
             updateFrameList(history, currentIndex); // Update the frame list with the new toggle state
             break;
 
