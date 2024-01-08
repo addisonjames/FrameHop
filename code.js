@@ -119,8 +119,8 @@ function updateHistory() {
       const existingIndex = history.findIndex(item => item.frameId === itemId);
       if (existingIndex === -1) {
         // If it's not in history, add it and update currentIndex
-        history.push(newItem);
-        currentIndex = history.length - 1; // New item is at the end
+        history.unshift(newItem);
+        currentIndex = 0; // New item is now at the top
       } else {
         // If it's already in history, just update currentIndex
         currentIndex = existingIndex;
