@@ -15,7 +15,7 @@ function loadPluginData() {
 
   if (data) {
     const parsedData = JSON.parse(data);
-    history = parsedData.history || [];
+    history = parsedData.history.slice(-historyLength) || []; // Truncate the history right after loading it
     currentIndex = parsedData.currentIndex || -1;
     favorites = parsedData.favorites || [];
   } else {
@@ -23,19 +23,22 @@ function loadPluginData() {
     currentIndex = -1;
     favorites = [];
   }
+  console.log("History after loading data:", history); // Console log for debugging
   updateUI();
 
   // Restore window size
-  figma.clientStorage.getAsync('frameHopWindowSize').then(size => {
+  figma.clientStorage.getAsync("frameHopWindowSize").then((size) => {
     if (size) {
-        figma.ui.resize(size.width, size.height);
+      figma.ui.resize(size.width, size.height);
     }
   });
 }
 
 function updateUI() {
+  // Ensure the history array does not exceed the set history length
+  history = history.slice(-historyLength);
+  console.log("updateUI - Truncated history array:", history);
   const recentHistory = history
-    .slice(-historyLength)
     .reverse()
     .map((item) => {
       const node = figma.getNodeById(item.frameId);
@@ -57,8 +60,10 @@ function updateUI() {
     figma.currentPage.selection.length > 0
       ? figma.currentPage.selection[0].id
       : null;
+
   const currentPageId = figma.currentPage.id;
 
+  // Post the updated recent history and other details to the UI
   figma.ui.postMessage({
     type: "update",
     historyData: recentHistory,
@@ -107,16 +112,16 @@ function updateHistory() {
       const isSection = itemType === "SECTION";
       const item = { frameId: itemId, pageId: pageId, isSection: isSection };
 
-      const itemIndex = history.findIndex(
-        (h) => h.frameId === itemId && h.pageId === pageId
-      );
-      if (itemIndex === -1) {
-        history.push(item);
-        currentIndex = history.length - 1;
-      } else {
-        currentIndex = itemIndex;
+      history = history.filter((h) => h.frameId !== itemId); // Remove duplicate
+      history.push(item); // Add new item to the end
+
+      // Truncate history if it exceeds the set length
+      if (history.length > historyLength) {
+        history = history.slice(-historyLength);
       }
-      console.log("updateHistory - currentIndex:", currentIndex);
+
+      currentIndex = history.length - 1;
+            console.log("updateHistory - Updated history array:", history);
       updatePluginData();
     }
   }
@@ -157,10 +162,16 @@ function hopBackwards() {
 
 function cycleHistoryLength() {
   const lengths = [4, 8, 16, 20];
-  let currentIndex = lengths.indexOf(historyLength);
-  historyLength = lengths[(currentIndex + 1) % lengths.length];
-  updatePluginData();
-  updateUI();
+  let currentLengthIndex = lengths.indexOf(historyLength);
+  historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
+
+  // Truncate the history to the new length
+  if (history.length > historyLength) {
+    history = history.slice(-historyLength);
+  }
+  console.log("cycleHistoryLength - New history length:", historyLength, "History array:", history);
+  updatePluginData(); // Save the updated history and history length
+  updateUI(); // Update the UI with the new history
 }
 
 figma.ui.onmessage = (msg) => {
@@ -206,10 +217,10 @@ figma.ui.onmessage = (msg) => {
       });
       break;
     case "resize":
-        const { width, height } = msg;
-        figma.ui.resize(width, height);
-        figma.clientStorage.setAsync('frameHopWindowSize', { width, height });
-        break;
+      const { width, height } = msg;
+      figma.ui.resize(width, height);
+      figma.clientStorage.setAsync("frameHopWindowSize", { width, height });
+      break;
   }
 };
 
