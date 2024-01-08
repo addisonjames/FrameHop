@@ -128,14 +128,16 @@
         cursor: pointer;
         /* Styles to make it look clickable and align it with the star/checkbox */
       }
-      .resize-handle {
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        width: 20px;
-        height: 20px;
-        cursor: nwse-resize;
-      }
+.resize-handle {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    cursor: ns-resize; /* Cursor for vertical resize */
+    display: flex;
+    justify-content: center; /* Center the handle icon */
+}
     </style>
   </head>
 
@@ -181,16 +183,11 @@
     <div class="settings-item" id="clearData">Clear Data</div>
 
     <!-- Resize Handle -->
-    <div class="resize-handle">
-      <svg width="100%" height="20" viewBox="0 0 20 20">
-        <path
-          d="M0,20 L20,20 L20,0"
-          fill="none"
-          stroke="black"
-          stroke-width="2"
-        />
-      </svg>
-    </div>
+<div class="resize-handle">
+    <svg width="20" height="20" viewBox="0 0 20 20">
+    </svg>
+</div>
+
 
     <script>
       let history = [];
