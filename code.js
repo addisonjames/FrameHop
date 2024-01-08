@@ -87,12 +87,17 @@ function jumpToFrame(frameId) {
     figma.currentPage = targetPage;
     figma.currentPage.selection = [targetFrame];
     figma.viewport.scrollAndZoomIntoView([targetFrame]);
+
+    // Update currentIndex to the index of the frame that was just selected
+    currentIndex = history.findIndex(item => item.frameId === frameId);
+
     console.log("Jumped to Frame:", frameId, "on Page:", targetPage.name);
   } else {
     console.log("Frame not found:", frameId);
   }
   updateUI();
 }
+
 
 function updateHistory() {
   const currentSelection = figma.currentPage.selection;
@@ -108,27 +113,26 @@ function updateHistory() {
       const itemId = selectedItem.id;
       const pageId = selectedItem.parent.id;
       const isSection = itemType === "SECTION";
-      const item = { frameId: itemId, pageId: pageId, isSection: isSection };
+      const newItem = { frameId: itemId, pageId: pageId, isSection: isSection };
 
-      // Remove the item if it's already in history
-      history = history.filter(h => h.frameId !== itemId);
-      // Add the new item to the start of the array
-      history.unshift(item);
-
-      // Ensure we only keep the most recent 'historyLength' items
-      if (history.length > historyLength) {
-        history = history.slice(0, historyLength); // Truncate history from the start
+      // Check if the selected item is already in history
+      const existingIndex = history.findIndex(item => item.frameId === itemId);
+      if (existingIndex === -1) {
+        // If it's not in history, add it and update currentIndex
+        history.push(newItem);
+        currentIndex = history.length - 1; // New item is at the end
+      } else {
+        // If it's already in history, just update currentIndex
+        currentIndex = existingIndex;
       }
 
-      currentIndex = 0; // Reset currentIndex since we're always adding at the start
-
-      console.log("updateHistory - Updated history array:", history);
-
+      console.log("updateHistory - currentIndex:", currentIndex, "History:", history);
       updatePluginData();
     }
   }
   updateUI();
 }
+
 
 function hopForwards() {
   console.log(
