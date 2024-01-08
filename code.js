@@ -5,7 +5,16 @@ let showPageName = true; // Control the display of the page name
 let historyLength = 16; // Default history length
 
 function updatePluginData() {
-  const data = { history, currentIndex, favorites };
+  const data = {
+    history,
+    currentIndex,
+    favorites,
+    settings: {
+      // Include the settings in the data object
+      showPageName: showPageName,
+      historyLength: historyLength,
+    },
+  };
   figma.root.setPluginData("frameHopData", JSON.stringify(data));
 }
 
@@ -15,43 +24,56 @@ function loadPluginData() {
 
   if (data) {
     const parsedData = JSON.parse(data);
-    history = parsedData.history.slice(-historyLength) || []; // Truncate the history right after loading it
+    history = parsedData.history || [];
     currentIndex = parsedData.currentIndex || -1;
     favorites = parsedData.favorites || [];
+    
+    // Load and apply settings
+    if (parsedData.settings) {
+      showPageName = parsedData.settings.showPageName !== undefined ? parsedData.settings.showPageName : showPageName;
+      historyLength = parsedData.settings.historyLength || historyLength;
+    }
   } else {
     history = [];
     currentIndex = -1;
     favorites = [];
+    // Default settings can be set here if needed
   }
-  console.log("History after loading data:", history); // Console log for debugging
-  updateUI();
-
+  console.log("History and Settings after loading data:", history, showPageName, historyLength); // Console log for debugging
+  
   // Restore window size
   figma.clientStorage.getAsync("frameHopWindowSize").then((size) => {
     if (size) {
       figma.ui.resize(size.width, size.height);
     }
   });
+
+  updateUI();
 }
+
 
 function updateUI() {
   // Slice the history array to respect the historyLength setting
   const limitedHistory = history.slice(-historyLength);
 
   // Reverse the history for display to show the most recent items first
-  const recentHistory = limitedHistory.reverse().map((item) => {
-    const node = figma.getNodeById(item.frameId);
-    const page = node ? figma.getNodeById(item.pageId) : null;
-    return node && page
-      ? {
-          id: node.id,
-          name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
-          pageId: page.id,
-          pageName: showPageName ? page.name : "",
-          isSection: item.isSection || false,
-        }
-      : null;
-  }).filter((node) => node !== null);
+  const recentHistory = limitedHistory
+    .reverse()
+    .map((item) => {
+      const node = figma.getNodeById(item.frameId);
+      const page = node ? figma.getNodeById(item.pageId) : null;
+      return node && page
+        ? {
+            id: node.id,
+            name:
+              node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
+            pageId: page.id,
+            pageName: showPageName ? page.name : "",
+            isSection: item.isSection || false,
+          }
+        : null;
+    })
+    .filter((node) => node !== null);
 
   const currentFrameId =
     figma.currentPage.selection.length > 0
@@ -72,7 +94,6 @@ function updateUI() {
   });
 }
 
-
 function jumpToFrame(frameId) {
   let targetPage = null;
   let targetFrame = null;
@@ -91,7 +112,7 @@ function jumpToFrame(frameId) {
     figma.viewport.scrollAndZoomIntoView([targetFrame]);
 
     // Update currentIndex to the index of the frame that was just selected
-    currentIndex = history.findIndex(item => item.frameId === frameId);
+    currentIndex = history.findIndex((item) => item.frameId === frameId);
 
     console.log("Jumped to Frame:", frameId, "on Page:", targetPage.name);
   } else {
@@ -99,7 +120,6 @@ function jumpToFrame(frameId) {
   }
   updateUI();
 }
-
 
 // Function to record the frame ID and page ID when a new frame is selected
 function updateHistory() {
@@ -133,7 +153,6 @@ function updateHistory() {
   }
   updateUI();
 }
-
 
 // Handle hopping forwards in history
 function hopForwards() {
@@ -174,15 +193,13 @@ function cycleHistoryLength() {
   let currentLengthIndex = lengths.indexOf(historyLength);
   historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
 
-  // Correctly adjust the history array if it's longer than the new historyLength
   if (history.length > historyLength) {
     history = history.slice(-historyLength);
   }
 
-  updatePluginData(); // Save the updated history and history length
-  updateUI(); // Update the UI with the new history
+  updatePluginData(); // Also save the updated historyLength setting
+  updateUI();
 }
-
 
 figma.ui.onmessage = (msg) => {
   switch (msg.type) {
@@ -212,7 +229,7 @@ figma.ui.onmessage = (msg) => {
       break;
     case "togglePageName":
       showPageName = msg.value;
-      updatePluginData();
+      updatePluginData(); // Save the settings when toggled
       figma.ui.postMessage({
         type: "toggleShowPageName",
         value: showPageName,
@@ -220,11 +237,7 @@ figma.ui.onmessage = (msg) => {
       updateUI();
       break;
     case "cycleHistoryLength":
-      cycleHistoryLength();
-      figma.ui.postMessage({
-        type: "updateHistoryLengthDisplay",
-        historyLength: historyLength,
-      });
+      cycleHistoryLength(); // This function now should call updatePluginData internally
       break;
     case "resize":
       const { width, height } = msg;
