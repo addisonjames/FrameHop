@@ -278,7 +278,7 @@
         });
       }
 
-      function updateFavoriteList(favorites = [], currentFavoriteIndex) {
+      function updateFavoriteList(favorites, currentFavoriteIndex) {
         const list = document.getElementById("favoriteList");
         list.innerHTML = "";
         favorites.forEach((frame, index) => {
@@ -428,73 +428,73 @@
 
       let currentFavoriteIndex; // Declare this variable outside the window.onmessage handler
 
-      window.onmessage = (event) => {
-        const {
-          type,
-          historyData,
-          currentFrameId,
-          favorites: updatedFavorites,
-          showPageName: newShowPageName,
-          historyLength: newHistoryLength,
-          currentFavoriteIndex,
-        } = event.data.pluginMessage;
+window.onmessage = (event) => {
+  const {
+    type,
+    historyData,
+    currentFrameId,
+    favorites: updatedFavorites,
+    showPageName: newShowPageName,
+    historyLength: newHistoryLength,
+    currentFavoriteIndex
+  } = event.data.pluginMessage;
 
-        switch (type) {
-          case "dataCleared":
-            // Clear the UI components
-            document.getElementById("frameList").innerHTML = "";
-            document.getElementById("favoriteList").innerHTML = "";
-            // Reset other UI elements if necessary, like checkboxes or input fields
-            document.getElementById("togglePageName").checked = true; // Assuming true is the default state
-            // Add any other UI reset logic as needed
-            break;
+  switch (type) {
+        case "dataCleared":
+      // Clear UI components
+      document.getElementById("favoriteList").innerHTML = "";
+      document.getElementById("frameList").innerHTML = "";
+      // Reset any other UI elements that display data
+      document.getElementById("togglePageName").checked = true; // Reset to default if needed
+      // More UI reset logic if necessary...
+      break;
+    case "update":
+    case "update":
+      history = historyData;
+      currentIndex = historyData.findIndex(
+        (frame) => frame.id === currentFrameId
+      );
+      favorites = updatedFavorites;
+      updateFrameList(historyData, currentFrameId);
+      updateFavoriteList(favorites, currentFavoriteIndex);
+      break;
 
-          case "update":
-            history = historyData;
-            currentIndex = historyData.findIndex(
-              (frame) => frame.id === currentFrameId
-            );
-            favorites = updatedFavorites;
-            updateFrameList(historyData, currentFrameId);
-            updateFavoriteList(updatedFavorites || []);
-            break;
+    case "toggleShowPageName":
+      // This case is triggered when the state changes are sent from the plugin code
+      document.getElementById("togglePageName").checked = newShowPageName;
+      // Also, make sure to update the UI elements if needed
+      updateFrameList(history, currentIndex);
+      updateFavoriteList(favorites, currentFavoriteIndex);
+      break;
 
-          case "toggleShowPageName":
-            // This case is triggered when the state changes are sent from the plugin code
-            document.getElementById("togglePageName").checked = newShowPageName;
-            // Also, make sure to update the UI elements if needed
-            updateFrameList(history, currentIndex);
-            updateFavoriteList(favorites, currentFavoriteIndex);
-            break;
+    case "updateHistoryLengthDisplay":
+      document.getElementById("historyLengthDisplay").textContent =
+        newHistoryLength;
+      updateFrameList(history, currentIndex);
+      updateFavoriteList(favorites, currentFavoriteIndex);
+      break;
 
-          case "updateHistoryLengthDisplay":
-            document.getElementById("historyLengthDisplay").textContent =
-              newHistoryLength;
-            updateFrameList(history, currentIndex);
-            updateFavoriteList(favorites, currentFavoriteIndex);
-            break;
+    case "loadSettings":
+      // Update the UI with the initial settings when the plugin is reloaded
+      document.getElementById("togglePageName").checked = newShowPageName;
+      document.getElementById("historyLengthDisplay").textContent =
+        newHistoryLength;
+      updateFrameList(history, currentIndex);
+      updateFavoriteList(favorites, currentFavoriteIndex);
+      break;
 
-          case "loadSettings":
-            // Update the UI with the initial settings when the plugin is reloaded
-            document.getElementById("togglePageName").checked = newShowPageName;
-            document.getElementById("historyLengthDisplay").textContent =
-              newHistoryLength;
-            updateFrameList(history, currentIndex);
-            updateFavoriteList(favorites, currentFavoriteIndex);
-            break;
+        case "showPageNameUpdated":
+      // This message should be sent from code.js after the showPageName state is updated
+      document.getElementById("togglePageName").checked = newShowPageName;
+      break;
 
-          case "showPageNameUpdated":
-            // Update the checkbox state based on the showPageName value received from the main code
-            document.getElementById("togglePageName").checked =
-              event.data.pluginMessage.showPageName;
-            // Update the rest of the UI if needed
-            break;
 
-          default:
-            console.log("Received an unhandled message type:", type);
-            break;
-        }
-      };
+    default:
+      console.log("Received an unhandled message type:", type);
+      break;
+  }
+};
+
     </script>
   </body>
 </html>
