@@ -115,17 +115,10 @@
 
       /* Style for unchecked checkbox */
       .styled-checkbox {
-        accent-color: black; /* Set the color of the checkbox when it's unchecked */
+        accent-color: #3e8ae2; /* Set the border color of the checkbox when it's unchecked */
         cursor: pointer;
-        background: #2c2c2c;
-        background-color: #2c2c2c;
-      }
-
-      /* Style for checked checkbox */
-      .styled-checkbox:checked {
-        accent-color: white; /* Set the color of the checkbox when it's checked */
-        background-color: #4497F7; /* Change background when checked */
-        border-color: #fff; /* Optional: if you want to change the border as well */
+        background-color: #2c2c2c; /* Set the background to transparent when unchecked */
+        border: 1px solid #ffffff; /* Add a border to the checkbox */
       }
 
       #clearData {
@@ -353,19 +346,19 @@
       }
 
       // Function to handle the 'Clear Data' button click
-document.getElementById("clearData").onclick = function () {
-  // Reset local history, currentIndex, and favorites
-  history = [];
-  currentIndex = -1;
-  favorites = []; // Make sure favorites is an empty array, not undefined
+      document.getElementById("clearData").onclick = function () {
+        // Reset local history, currentIndex, and favorites
+        history = [];
+        currentIndex = -1;
+        favorites = []; // Make sure favorites is an empty array, not undefined
 
-  // Update the frame list and favorites list in the UI to reflect the cleared data
-  updateFrameList([]);
-  updateFavoriteList(favorites, -1); // Pass empty favorites and reset index
+        // Update the frame list and favorites list in the UI to reflect the cleared data
+        updateFrameList([]);
+        updateFavoriteList(favorites, -1); // Pass empty favorites and reset index
 
-  // Send a message to the main plugin script to clear the data there as well
-  parent.postMessage({ pluginMessage: { type: "clearData" } }, "*");
-};
+        // Send a message to the main plugin script to clear the data there as well
+        parent.postMessage({ pluginMessage: { type: "clearData" } }, "*");
+      };
 
       // Event listener for cycling history length
       document
@@ -432,73 +425,71 @@ document.getElementById("clearData").onclick = function () {
 
       let currentFavoriteIndex; // Declare this variable outside the window.onmessage handler
 
-window.onmessage = (event) => {
-  const {
-    type,
-    historyData,
-    currentFrameId,
-    favorites: updatedFavorites,
-    showPageName: newShowPageName,
-    historyLength: newHistoryLength,
-    currentFavoriteIndex
-  } = event.data.pluginMessage;
+      window.onmessage = (event) => {
+        const {
+          type,
+          historyData,
+          currentFrameId,
+          favorites: updatedFavorites,
+          showPageName: newShowPageName,
+          historyLength: newHistoryLength,
+          currentFavoriteIndex,
+        } = event.data.pluginMessage;
 
-  switch (type) {
-        case "dataCleared":
-      // Clear UI components
-      document.getElementById("favoriteList").innerHTML = "";
-      document.getElementById("frameList").innerHTML = "";
-      // Reset any other UI elements that display data
-      document.getElementById("togglePageName").checked = true; // Reset to default if needed
-      // More UI reset logic if necessary...
-      break;
-    case "update":
-    case "update":
-      history = historyData;
-      currentIndex = historyData.findIndex(
-        (frame) => frame.id === currentFrameId
-      );
-      favorites = updatedFavorites;
-      updateFrameList(historyData, currentFrameId);
-      updateFavoriteList(favorites, currentFavoriteIndex);
-      break;
+        switch (type) {
+          case "dataCleared":
+            // Clear UI components
+            document.getElementById("favoriteList").innerHTML = "";
+            document.getElementById("frameList").innerHTML = "";
+            // Reset any other UI elements that display data
+            document.getElementById("togglePageName").checked = true; // Reset to default if needed
+            // More UI reset logic if necessary...
+            break;
+          case "update":
+          case "update":
+            history = historyData;
+            currentIndex = historyData.findIndex(
+              (frame) => frame.id === currentFrameId
+            );
+            favorites = updatedFavorites;
+            updateFrameList(historyData, currentFrameId);
+            updateFavoriteList(favorites, currentFavoriteIndex);
+            break;
 
-    case "toggleShowPageName":
-      // This case is triggered when the state changes are sent from the plugin code
-      document.getElementById("togglePageName").checked = newShowPageName;
-      // Also, make sure to update the UI elements if needed
-      updateFrameList(history, currentIndex);
-      updateFavoriteList(favorites, currentFavoriteIndex);
-      break;
+          case "toggleShowPageName":
+            // This case is triggered when the state changes are sent from the plugin code
+            document.getElementById("togglePageName").checked = newShowPageName;
+            // Also, make sure to update the UI elements if needed
+            updateFrameList(history, currentIndex);
+            updateFavoriteList(favorites, currentFavoriteIndex);
+            break;
 
-    case "updateHistoryLengthDisplay":
-      document.getElementById("historyLengthDisplay").textContent =
-        newHistoryLength;
-      updateFrameList(history, currentIndex);
-      updateFavoriteList(favorites, currentFavoriteIndex);
-      break;
+          case "updateHistoryLengthDisplay":
+            document.getElementById("historyLengthDisplay").textContent =
+              newHistoryLength;
+            updateFrameList(history, currentIndex);
+            updateFavoriteList(favorites, currentFavoriteIndex);
+            break;
 
-    case "loadSettings":
-      // Update the UI with the initial settings when the plugin is reloaded
-      document.getElementById("togglePageName").checked = newShowPageName;
-      document.getElementById("historyLengthDisplay").textContent =
-        newHistoryLength;
-      updateFrameList(history, currentIndex);
-      updateFavoriteList(favorites, currentFavoriteIndex);
-      break;
+          case "loadSettings":
+            // Update the UI with the initial settings when the plugin is reloaded
+            document.getElementById("togglePageName").checked = newShowPageName;
+            document.getElementById("historyLengthDisplay").textContent =
+              newHistoryLength;
+            updateFrameList(history, currentIndex);
+            updateFavoriteList(favorites, currentFavoriteIndex);
+            break;
 
-        case "showPageNameUpdated":
-      // This message should be sent from code.js after the showPageName state is updated
-      document.getElementById("togglePageName").checked = newShowPageName;
-      break;
+          case "showPageNameUpdated":
+            // This message should be sent from code.js after the showPageName state is updated
+            document.getElementById("togglePageName").checked = newShowPageName;
+            break;
 
-
-    default:
-      console.log("Received an unhandled message type:", type);
-      break;
-  }
-};
-
+          default:
+            console.log("Received an unhandled message type:", type);
+            break;
+        }
+      };
     </script>
   </body>
 </html>
