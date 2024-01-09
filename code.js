@@ -146,7 +146,6 @@ function jumpToFrame(frameId) {
   updateUI();
 }
 
-// Function to record the frame ID and page ID when a new frame is selected
 function updateHistory() {
   const currentSelection = figma.currentPage.selection;
   if (currentSelection.length > 0) {
@@ -167,21 +166,25 @@ function updateHistory() {
         (h) => h.frameId === itemId && h.pageId === pageId
       );
       if (itemIndex === -1) {
+        // Add new item and slice the history if it exceeds historyLength
         history.push(item);
+        if (history.length > historyLength) {
+          history = history.slice(-historyLength);
+        }
         currentIndex = history.length - 1;
       } else {
+        // If the item is already in the history, update currentIndex without reordering
         currentIndex = itemIndex;
       }
-      // Update currentFavoriteIndex for the selected frame
-      currentFavoriteIndex = favorites.findIndex((item) => item.id === itemId);
-      console.log("updateHistory - currentIndex:", currentIndex);
+      updatePluginData();
+      updateUI();
     }
   } else {
-    // Reset currentFavoriteIndex if nothing is selected
-    currentFavoriteIndex = -1;
+    // Reset currentIndex if nothing is selected
+    currentIndex = history.length > 0 ? history.length - 1 : -1;
+    updatePluginData();
+    updateUI();
   }
-  updatePluginData();
-  updateUI();
 }
 
 figma.on("selectionchange", updateHistory);
@@ -227,10 +230,11 @@ function cycleHistoryLength() {
 
   if (history.length > historyLength) {
     history = history.slice(-historyLength);
+    currentIndex = Math.min(currentIndex, history.length - 1); // Ensure currentIndex isn't out of bounds
   }
 
   updatePluginData(); // Save the updated history length setting
-  updateUI();
+  updateUI(); // Reflect changes in the UI
 
   // Send a message to the UI to update the history length display
   figma.ui.postMessage({
@@ -238,6 +242,7 @@ function cycleHistoryLength() {
     historyLength: historyLength,
   });
 }
+
 
 figma.ui.onmessage = (msg) => {
   switch (msg.type) {
