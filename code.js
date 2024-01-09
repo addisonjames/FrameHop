@@ -194,34 +194,36 @@ figma.on("selectionchange", updateHistory);
 
 // Handle hopping forwards in history
 function hopForwards() {
-  console.log(
-    "Before Hop Forwards: currentIndex =",
-    currentIndex,
-    ", history =",
-    history
-  );
+  console.log("Before Hop Forwards: currentIndex =", currentIndex, ", history =", history);
   loadPluginData();
   if (currentIndex < history.length - 1) {
     currentIndex += 1;
     jumpToFrame(history[currentIndex].frameId);
     updatePluginData();
+    // Restore window size after hopping forwards
+    figma.clientStorage.getAsync("frameHopWindowSize").then((size) => {
+      if (size) {
+        figma.ui.resize(size.width, size.height);
+      }
+    });
     console.log("After Hop Forwards: currentIndex =", currentIndex);
   }
 }
 
 // Handle hopping backwards in history
 function hopBackwards() {
-  console.log(
-    "Before Hop Backwards: currentIndex =",
-    currentIndex,
-    ", history =",
-    history
-  );
+  console.log("Before Hop Backwards: currentIndex =", currentIndex, ", history =", history);
   loadPluginData();
   if (currentIndex > 0) {
     currentIndex -= 1;
     jumpToFrame(history[currentIndex].frameId);
     updatePluginData();
+    // Restore window size after hopping backwards
+    figma.clientStorage.getAsync("frameHopWindowSize").then((size) => {
+      if (size) {
+        figma.ui.resize(size.width, size.height);
+      }
+    });
     console.log("After Hop Backwards: currentIndex =", currentIndex);
   }
 }
@@ -246,28 +248,22 @@ function cycleHistoryLength() {
   });
 }
 
-
 figma.ui.onmessage = (msg) => {
   switch (msg.type) {
     case "jumpToFrame":
       jumpToFrame(msg.frameId);
       break;
     case "clearData":
+      // Reset the data
       history = [];
       currentIndex = -1;
       favorites = [];
-      currentFavoriteIndex = -1;
-      // Clear plugin data from Figma's storage
-      figma.root.setPluginData(
-        "frameHopData",
-        JSON.stringify({ history, currentIndex, favorites })
-      );
-      // Also clear any persistent storage as necessary
-      figma.clientStorage.setAsync("frameHopData", null); // Make sure to use the correct key here
-      // Now, inform the UI to clear its state
-      figma.ui.postMessage({
-        type: "dataCleared",
-      });
+      // Set the plugin data to an empty object
+      figma.root.setPluginData("frameHopData", JSON.stringify({}));
+      // Clear any stored data if necessary
+      figma.clientStorage.setAsync("frameHopWindowSize", null);
+      // Inform the UI to clear its state
+      figma.ui.postMessage({ type: "dataCleared" });
       updateUI();
       break;
     case "updateFavorites":
@@ -296,6 +292,7 @@ figma.ui.onmessage = (msg) => {
     case "resize":
       const { width, height } = msg;
       figma.ui.resize(width, height);
+      // Save the new size to clientStorage
       figma.clientStorage.setAsync("frameHopWindowSize", { width, height });
       break;
   }

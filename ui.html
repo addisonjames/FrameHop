@@ -278,7 +278,7 @@
         });
       }
 
-      function updateFavoriteList(favorites, currentFavoriteIndex) {
+      function updateFavoriteList(favorites = [], currentFavoriteIndex) {
         const list = document.getElementById("favoriteList");
         list.innerHTML = "";
         favorites.forEach((frame, index) => {
@@ -448,6 +448,7 @@
             document.getElementById("togglePageName").checked = true; // Assuming true is the default state
             // Add any other UI reset logic as needed
             break;
+
           case "update":
             history = historyData;
             currentIndex = historyData.findIndex(
@@ -455,7 +456,7 @@
             );
             favorites = updatedFavorites;
             updateFrameList(historyData, currentFrameId);
-            updateFavoriteList(favorites, currentFavoriteIndex);
+            updateFavoriteList(updatedFavorites || []);
             break;
 
           case "toggleShowPageName":
