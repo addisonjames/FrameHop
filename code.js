@@ -228,32 +228,19 @@ function cycleHistoryLength() {
   let currentLengthIndex = lengths.indexOf(historyLength);
   historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
 
-  // Determine the frame to highlight after cycling history length
-  let frameToHighlight = currentIndex < history.length ? history[currentIndex] : null;
-
   if (history.length > historyLength) {
     history = history.slice(-historyLength);
-    // Update currentIndex to the new index of the frame to highlight
-    currentIndex = history.findIndex(item => frameToHighlight && item.frameId === frameToHighlight.frameId);
-    if(currentIndex === -1 && frameToHighlight) {
-      currentIndex = history.length - 1; // If not found, set to the last item.
-    }
+    currentIndex = Math.min(currentIndex, history.length - 1); // Ensure currentIndex isn't out of bounds
   }
-
-  currentFavoriteIndex = favorites.findIndex(fav => frameToHighlight && fav.id === frameToHighlight.frameId);
 
   updatePluginData(); // Save the updated history length setting
   updateUI(); // Reflect changes in the UI
 
-  // Send a message to the UI to update the history length display and maintain highlighting
+  // Send a message to the UI to update the history length display
   figma.ui.postMessage({
     type: "updateHistoryLengthDisplay",
     historyLength: historyLength,
-    currentFrameId: frameToHighlight ? frameToHighlight.frameId : null,
-    currentFavoriteIndex: currentFavoriteIndex
   });
-
-  console.log(`Cycle History Length: New length is ${historyLength}, current index is ${currentIndex}`);
 }
 
 figma.ui.onmessage = (msg) => {
