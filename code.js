@@ -67,54 +67,44 @@ function loadPluginData() {
 }
 
 function updateUI() {
-  // Slice the history array to respect the historyLength setting
+  // This variable will hold the ID of the currently selected frame, if any
+  const currentSelectionId = figma.currentPage.selection.length > 0
+    ? figma.currentPage.selection[0].id
+    : null;
+
+  // Update currentFavoriteIndex based on the current selection
+  currentFavoriteIndex = favorites.findIndex(fav => fav.id === currentSelectionId);
+
+  // Slice the history to respect the historyLength setting
   const limitedHistory = history.slice(-historyLength);
 
-  // Reverse the history for display to show the most recent items first
-  const recentHistory = limitedHistory
-    .reverse()
-    .map((item) => {
-      const node = figma.getNodeById(item.frameId);
-      const page = node ? figma.getNodeById(item.pageId) : null;
-      return node && page
-        ? {
-            id: node.id,
-            name:
-              node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
-            pageId: page.id,
-            pageName: showPageName ? page.name : "",
-            isSection: item.isSection || false,
-          }
-        : null;
-    })
-    .filter((node) => node !== null);
+  // Reverse the history for display purposes
+  const recentHistory = limitedHistory.reverse().map(item => {
+    const node = figma.getNodeById(item.frameId);
+    const page = node ? figma.getNodeById(item.pageId) : null;
+    return node && page ? {
+      id: node.id,
+      name: node.name || (node.type === 'SECTION' ? 'Section' : 'Unnamed'),
+      pageId: page.id,
+      pageName: showPageName ? page.name : '',
+      isSection: item.isSection || false
+    } : null;
+  }).filter(node => node !== null);
 
-  const currentFrameId =
-    figma.currentPage.selection.length > 0
-      ? figma.currentPage.selection[0].id
-      : null;
-
-  const currentPageId = figma.currentPage.id;
+  // Send the updated information to the UI
+  figma.ui.postMessage({
+    type: 'update',
+    historyData: recentHistory,
+    currentFrameId: currentSelectionId,
+    currentPageId: figma.currentPage.id,
+    favorites,
+    currentFavoriteIndex,
+    showPageName
+  });
 
   console.log("updateUI - Recent history for UI:", recentHistory);
-  // Check if data is cleared and send a message to the UI to reset if needed
-  if (history.length === 0 && currentIndex === -1 && favorites.length === 0) {
-    figma.ui.postMessage({
-      type: "dataCleared"
-    });
-  } else {
-  // Post the updated recent history and other details to the UI
-  figma.ui.postMessage({
-    type: "update",
-    historyData: recentHistory,
-    currentFrameId,
-    currentPageId,
-    favorites,
-    currentFavoriteIndex: currentFavoriteIndex,
-    showPageName: showPageName,
-  });
 }
-}
+
 
 function jumpToFrame(frameId) {
   let targetPage = null;
