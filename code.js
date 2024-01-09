@@ -100,20 +100,20 @@ function updateUI() {
   // Check if data is cleared and send a message to the UI to reset if needed
   if (history.length === 0 && currentIndex === -1 && favorites.length === 0) {
     figma.ui.postMessage({
-      type: "dataCleared"
+      type: "dataCleared",
     });
   } else {
-  // Post the updated recent history and other details to the UI
-  figma.ui.postMessage({
-    type: "update",
-    historyData: recentHistory,
-    currentFrameId,
-    currentPageId,
-    favorites,
-    currentFavoriteIndex: currentFavoriteIndex,
-    showPageName: showPageName,
-  });
-}
+    // Post the updated recent history and other details to the UI
+    figma.ui.postMessage({
+      type: "update",
+      historyData: recentHistory,
+      currentFrameId,
+      currentPageId,
+      favorites,
+      currentFavoriteIndex: currentFavoriteIndex,
+      showPageName: showPageName,
+    });
+  }
 }
 
 function jumpToFrame(frameId) {
@@ -168,6 +168,10 @@ function updateHistory() {
       );
       if (itemIndex === -1) {
         history.push(item);
+        // Ensure history does not exceed the historyLength
+        if (history.length > historyLength) {
+          history = history.slice(-historyLength);
+        }
         currentIndex = history.length - 1;
       } else {
         currentIndex = itemIndex;
@@ -175,13 +179,15 @@ function updateHistory() {
       // Update currentFavoriteIndex for the selected frame
       currentFavoriteIndex = favorites.findIndex((item) => item.id === itemId);
       console.log("updateHistory - currentIndex:", currentIndex);
+      updatePluginData();
+      updateUI();
     }
   } else {
     // Reset currentFavoriteIndex if nothing is selected
     currentFavoriteIndex = -1;
+    updatePluginData();
+    updateUI();
   }
-  updatePluginData();
-  updateUI();
 }
 
 figma.on("selectionchange", updateHistory);
@@ -225,6 +231,7 @@ function cycleHistoryLength() {
   let currentLengthIndex = lengths.indexOf(historyLength);
   historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
 
+  // Slice the history array if it exceeds the new historyLength
   if (history.length > historyLength) {
     history = history.slice(-historyLength);
   }
@@ -254,6 +261,8 @@ figma.ui.onmessage = (msg) => {
         "frameHopData",
         JSON.stringify({ history, currentIndex, favorites })
       );
+      // Also clear clientStorage
+      figma.clientStorage.setAsync("frameHopWindowSize", null);
       updateUI();
       break;
     case "updateFavorites":
@@ -269,7 +278,7 @@ figma.ui.onmessage = (msg) => {
       break;
     case "togglePageName":
       showPageName = msg.value;
-      updatePluginData();
+      updatePluginData(); // Save the updated setting
       figma.ui.postMessage({
         type: "showPageNameUpdated",
         showPageName: showPageName,
