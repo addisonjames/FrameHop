@@ -441,14 +441,13 @@
 
         switch (type) {
           case "dataCleared":
-            // Clear UI components
-            document.getElementById("favoriteList").innerHTML = "";
+            // Clear the UI components
             document.getElementById("frameList").innerHTML = "";
-            // Reset any other UI elements that display data
-            document.getElementById("togglePageName").checked = true; // Reset to default if needed
-            // More UI reset logic if necessary...
+            document.getElementById("favoriteList").innerHTML = "";
+            // Reset other UI elements if necessary, like checkboxes or input fields
+            document.getElementById("togglePageName").checked = true; // Assuming true is the default state
+            // Add any other UI reset logic as needed
             break;
-          case "update":
           case "update":
             history = historyData;
             currentIndex = historyData.findIndex(

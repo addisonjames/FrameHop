@@ -246,6 +246,7 @@ function cycleHistoryLength() {
   });
 }
 
+
 figma.ui.onmessage = (msg) => {
   switch (msg.type) {
     case "jumpToFrame":
@@ -261,8 +262,12 @@ figma.ui.onmessage = (msg) => {
         "frameHopData",
         JSON.stringify({ history, currentIndex, favorites })
       );
-      // Also clear clientStorage
-      figma.clientStorage.setAsync("frameHopWindowSize", null);
+      // Also clear any persistent storage as necessary
+      figma.clientStorage.setAsync("frameHopData", null); // Make sure to use the correct key here
+      // Now, inform the UI to clear its state
+      figma.ui.postMessage({
+        type: "dataCleared",
+      });
       updateUI();
       break;
     case "updateFavorites":
