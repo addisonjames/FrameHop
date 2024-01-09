@@ -349,19 +349,19 @@
       }
 
       // Function to handle the 'Clear Data' button click
-      document.getElementById("clearData").onclick = function () {
-        // Reset local history, currentIndex, and favorites
-        history = [];
-        currentIndex = -1;
-        favorites = [];
+document.getElementById("clearData").onclick = function () {
+  // Reset local history, currentIndex, and favorites
+  history = [];
+  currentIndex = -1;
+  favorites = []; // Make sure favorites is an empty array, not undefined
 
-        // Update the frame list and favorites list in the UI to reflect the cleared data
-        updateFrameList([]);
-        updateFavoriteList();
+  // Update the frame list and favorites list in the UI to reflect the cleared data
+  updateFrameList([]);
+  updateFavoriteList(favorites, -1); // Pass empty favorites and reset index
 
-        // Send a message to the main plugin script to clear the data there as well
-        parent.postMessage({ pluginMessage: { type: "clearData" } }, "*");
-      };
+  // Send a message to the main plugin script to clear the data there as well
+  parent.postMessage({ pluginMessage: { type: "clearData" } }, "*");
+};
 
       // Event listener for cycling history length
       document

@@ -245,15 +245,15 @@ figma.ui.onmessage = (msg) => {
       jumpToFrame(msg.frameId);
       break;
     case "clearData":
+      // Reset the data
       history = [];
       currentIndex = -1;
       favorites = [];
-      currentFavoriteIndex = -1;
+      currentFavoriteIndex = -1; // Ensure this is also reset
       // Clear plugin data from Figma's storage
-      figma.root.setPluginData(
-        "frameHopData",
-        JSON.stringify({ history, currentIndex, favorites })
-      );
+      figma.root.setPluginData("frameHopData", JSON.stringify({}));
+      // Inform the UI to clear its state
+      figma.ui.postMessage({ type: "dataCleared" });
       updateUI();
       break;
     case "updateFavorites":
