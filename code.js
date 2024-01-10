@@ -107,34 +107,34 @@ function updateUI() {
 
 
 function jumpToFrame(frameId) {
-  let targetPage = null;
-  let targetFrame = null;
+  const targetFrame = figma.getNodeById(frameId);
 
-  figma.root.children.forEach((page) => {
-    const frame = page.findOne((node) => node.id === frameId);
-    if (frame) {
-      targetPage = page;
-      targetFrame = frame;
+  if (targetFrame) {
+    let targetPage = targetFrame.parent;
+    // Traverse up the node hierarchy until we find a page.
+    while (targetPage && targetPage.type !== 'PAGE') {
+      targetPage = targetPage.parent;
     }
-  });
 
-  if (targetPage && targetFrame) {
-    figma.currentPage = targetPage;
-    figma.currentPage.selection = [targetFrame];
-    figma.viewport.scrollAndZoomIntoView([targetFrame]);
+    if (targetPage) {
+      figma.currentPage = targetPage;
+      figma.currentPage.selection = [targetFrame];
+      figma.viewport.scrollAndZoomIntoView([targetFrame]);
 
-    // Update currentIndex to the index of the frame that was just selected
-    currentIndex = history.findIndex((item) => item.frameId === frameId);
+      // Update currentIndex and currentFavoriteIndex
+      currentIndex = history.findIndex(item => item.frameId === frameId);
+      currentFavoriteIndex = favorites.findIndex(item => item.id === frameId);
 
-    // Update currentFavoriteIndex for the selected frame
-    currentFavoriteIndex = favorites.findIndex((item) => item.id === frameId);
-
-    console.log("Jumped to Frame:", frameId, "on Page:", targetPage.name);
+      console.log("Jumped to Frame:", frameId, "on Page:", targetPage.name);
+    } else {
+      console.log("Page not found for frame:", frameId);
+    }
   } else {
     console.log("Frame not found:", frameId);
   }
   updateUI();
 }
+
 
 function updateHistory() {
   const currentSelection = figma.currentPage.selection;
