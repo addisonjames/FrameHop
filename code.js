@@ -75,6 +75,21 @@ function updateUI() {
   // Update currentFavoriteIndex based on the current selection
   currentFavoriteIndex = favorites.findIndex(fav => fav.id === currentSelectionId);
 
+  favorites = favorites.map(fav => {
+    const node = figma.getNodeById(fav.id);
+    if (node) {
+      // Update the favorite with the latest name from the Figma document
+      return {
+        id: fav.id,
+        name: node.name,
+        isSection: fav.isSection
+      };
+    } else {
+      // If the node is not found, return null to filter it out
+      return null;
+    }
+  }).filter(fav => fav !== null); // Filter out any favorites that might have been deleted
+
   // Slice the history to respect the historyLength setting
   const limitedHistory = history.slice(-historyLength);
 
@@ -97,12 +112,13 @@ function updateUI() {
     historyData: recentHistory,
     currentFrameId: currentSelectionId,
     currentPageId: figma.currentPage.id,
-    favorites,
+    favorites: favorites, // Send the updated favorites array
     currentFavoriteIndex,
     showPageName
   });
 
   console.log("updateUI - Recent history for UI:", recentHistory);
+  console.log("updateUI - Updated favorites:", favorites); // Additional log for debugging
 }
 
 

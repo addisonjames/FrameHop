@@ -294,50 +294,54 @@
         });
       }
 
-      function updateFavoriteList(favorites, currentFavoriteIndex) {
-        const list = document.getElementById("favoriteList");
-        list.innerHTML = "";
-        const truncateLength = 77; // Truncation length for frame names in favorites
+  function updateFavoriteList(favorites, currentFavoriteIndex) {
+    const list = document.getElementById("favoriteList");
+    list.innerHTML = "";
+    const truncateLength = 77; // Truncation length for frame names in favorites
 
-        favorites.forEach((frame, index) => {
-          const listItem = document.createElement("li");
-          listItem.classList.add("favorite-item");
+    favorites.forEach((frame, index) => {
+      // Fetch the latest node information from Figma
+      const node = parent.postMessage({ pluginMessage: { type: "fetchNodeInfo", frameId: frame.id } }, "*");
+      const updatedFrameName = node && node.name ? node.name : frame.name;
 
-          const star = document.createElement("span");
-          star.classList.add("favorite-star-icon");
-          star.textContent = "★";
-          star.onclick = (event) => {
-            event.stopPropagation();
-            toggleFavorite(frame);
-            updateFavoriteList(favorites, currentFavoriteIndex);
-          };
-          listItem.appendChild(star);
+      const listItem = document.createElement("li");
+      listItem.classList.add("favorite-item");
 
-          const frameName = document.createElement("span");
-          frameName.textContent =
-            frame.name.length > truncateLength
-              ? frame.name.substring(0, truncateLength - 3) + "..."
-              : frame.name;
-          listItem.appendChild(frameName);
+      const star = document.createElement("span");
+      star.classList.add("favorite-star-icon");
+      star.textContent = "★";
+      star.onclick = (event) => {
+        event.stopPropagation();
+        toggleFavorite(frame);
+        updateFavoriteList(favorites, currentFavoriteIndex);
+      };
+      listItem.appendChild(star);
 
-          listItem.onclick = (event) => {
-            const starWidth = star.offsetWidth;
-            const clickX =
-              event.clientX - listItem.getBoundingClientRect().left;
-            if (clickX > starWidth) {
-              jumpToFrame(frame.id, frame.pageId);
-              currentFavoriteIndex = index;
-              updateFavoriteList(favorites, currentFavoriteIndex);
-            }
-          };
+      const frameName = document.createElement("span");
+      frameName.textContent =
+        updatedFrameName.length > truncateLength
+          ? updatedFrameName.substring(0, truncateLength - 3) + "..."
+          : updatedFrameName;
+      listItem.appendChild(frameName);
 
-          if (currentFavoriteIndex === index) {
-            listItem.style.backgroundColor = "#4D5875";
-          }
+      listItem.onclick = (event) => {
+        const starWidth = star.offsetWidth;
+        const clickX =
+          event.clientX - listItem.getBoundingClientRect().left;
+        if (clickX > starWidth) {
+          jumpToFrame(frame.id, frame.pageId);
+          currentFavoriteIndex = index;
+          updateFavoriteList(favorites, currentFavoriteIndex);
+        }
+      };
 
-          list.appendChild(listItem);
-        });
+      if (currentFavoriteIndex === index) {
+        listItem.style.backgroundColor = "#4D5875";
       }
+
+      list.appendChild(listItem);
+    });
+  }
 
       function toggleFavorite(frame, historyData = null) {
         const isFavorite = favorites.some((fav) => fav.id === frame.id);
