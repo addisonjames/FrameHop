@@ -84,12 +84,12 @@
       /* Style for star icon in favorite list */
       .favorite-star-icon {
         cursor: pointer;
-        margin-right: 6px; /* Space between star and frame name */
+        margin-right: 8px; /* Space between star and frame name */
       }
 
       .star-icon {
         cursor: pointer;
-        margin-right: 4px; /* Adjust the space between the star and the frame name */
+        margin: 0 4 0 4px; /* Adjust the space between the star and the frame name */
       }
 
       /* New class for the settings title similar to History */
@@ -223,41 +223,58 @@
       }
 
       function updateFrameList(historyData, currentFrameId) {
+        // Get the list element and clear its current content
         const list = document.getElementById("frameList");
         list.innerHTML = "";
         let currentFrameFound = false;
 
+        // Loop through each frame in the history data
         historyData.forEach((frame) => {
+          // Create a list item for each frame
           const listItem = document.createElement("li");
           listItem.classList.add("history-item");
 
-          // Make the entire row clickable, excluding the star icon
+          // Set an onclick event to jump to the frame when the list item is clicked
           listItem.onclick = (event) => {
             if (!event.target.classList.contains("star-icon")) {
               jumpToFrame(frame.id, frame.pageId);
             }
           };
 
+          // Create a span to hold the frame name
           const frameName = document.createElement("span");
-          frameName.textContent = frame.name;
+
+          // Set the Frame Name truncation length based on whether page names are shown
+          const truncateLength = showPageName ? 50 : 76; // Truncation length settings
+          // Truncate the frame name if necessary
+          const truncatedFrameName =
+            frame.name.length > truncateLength
+              ? frame.name.substring(0, truncateLength - 3) + "..."
+              : frame.name;
+          frameName.textContent = truncatedFrameName;
           listItem.appendChild(frameName);
 
-          if (showPageName && frame.pageName) {
-            // Ensure there is a page name to display
-            const truncatedPageName =
-              frame.pageName.length > 32
-                ? frame.pageName.substring(0, 29) + "..."
-                : frame.pageName;
+          // Define the truncation length for page names
+          const pageNameTruncateLength = 22;
 
+          // If showing page names, add the page name to the list item
+          if (showPageName && frame.pageName) {
+            // Truncate the page name if necessary (in code; control above)
+            const truncatedPageName =
+              frame.pageName.length > pageNameTruncateLength
+                ? frame.pageName.substring(0, pageNameTruncateLength - 3) +
+                  "..."
+                : frame.pageName;
             const pageNameSpan = document.createElement("span");
-            pageNameSpan.textContent = ` (${truncatedPageName})`; // Page name with parentheses
+            pageNameSpan.textContent = ` (${truncatedPageName})`;
             pageNameSpan.className = "page-name-style";
             frameName.appendChild(pageNameSpan);
           }
 
+          // Set an onclick event for the frame name span
           frameName.onclick = () => jumpToFrame(frame.id, frame.pageId);
-          listItem.appendChild(frameName);
 
+          // Create and append the star icon for the favorites feature
           const star = document.createElement("span");
           star.classList.add("star-icon");
           star.textContent = favorites.some((fav) => fav.id === frame.id)
@@ -266,11 +283,13 @@
           star.onclick = () => toggleFavorite(frame, historyData);
           listItem.appendChild(star);
 
+          // Highlight the current frame if found
           if (frame.id === currentFrameId && !currentFrameFound) {
             listItem.style.backgroundColor = "#4D5875";
             currentFrameFound = true;
           }
 
+          // Append the list item to the list
           list.appendChild(listItem);
         });
       }
@@ -278,6 +297,8 @@
       function updateFavoriteList(favorites, currentFavoriteIndex) {
         const list = document.getElementById("favoriteList");
         list.innerHTML = "";
+        const truncateLength = 77; // Truncation length for frame names in favorites
+
         favorites.forEach((frame, index) => {
           const listItem = document.createElement("li");
           listItem.classList.add("favorite-item");
@@ -285,16 +306,19 @@
           const star = document.createElement("span");
           star.classList.add("favorite-star-icon");
           star.textContent = "★";
+          star.onclick = (event) => {
+            event.stopPropagation();
+            toggleFavorite(frame);
+            updateFavoriteList(favorites, currentFavoriteIndex);
+          };
           listItem.appendChild(star);
 
           const frameName = document.createElement("span");
-          frameName.textContent = frame.name;
+          frameName.textContent =
+            frame.name.length > truncateLength
+              ? frame.name.substring(0, truncateLength - 3) + "..."
+              : frame.name;
           listItem.appendChild(frameName);
-
-          // Apply the highlight based on currentFavoriteIndex
-          if (currentFavoriteIndex === index) {
-            listItem.style.backgroundColor = "#4D5875"; // Highlight color
-          }
 
           listItem.onclick = (event) => {
             const starWidth = star.offsetWidth;
@@ -302,18 +326,14 @@
               event.clientX - listItem.getBoundingClientRect().left;
             if (clickX > starWidth) {
               jumpToFrame(frame.id, frame.pageId);
-              // Update the current favorite index and re-render the list
-              currentFavoriteIndex = index; // Update the index
-              updateFavoriteList(favorites, currentFavoriteIndex); // Re-render the list with new index
+              currentFavoriteIndex = index;
+              updateFavoriteList(favorites, currentFavoriteIndex);
             }
           };
 
-          // Add a click event for the star icon
-          star.onclick = (event) => {
-            event.stopPropagation(); // Prevent the row click event from triggering
-            toggleFavorite(frame);
-            updateFavoriteList(favorites, currentFavoriteIndex); // Update the list to reflect the change
-          };
+          if (currentFavoriteIndex === index) {
+            listItem.style.backgroundColor = "#4D5875";
+          }
 
           list.appendChild(listItem);
         });
@@ -374,15 +394,19 @@
       document
         .getElementById("togglePageName")
         .addEventListener("change", function (event) {
+          showPageName = event.target.checked; // Update showPageName with the new toggle state
           parent.postMessage(
             {
               pluginMessage: {
                 type: "togglePageName",
-                value: event.target.checked,
+                value: showPageName,
               },
             },
             "*"
           );
+
+          // Call updateFrameList to update the UI with the new state
+          updateFrameList(history, currentIndex);
         });
 
       // The window.onmessage listener handles messages sent from the plugin's main code.
