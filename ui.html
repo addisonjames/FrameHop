@@ -499,14 +499,20 @@
             updateFavoriteList(favorites, currentFavoriteIndex);
             break;
 
-          case "loadSettings":
-            // Update the UI with the initial settings when the plugin is reloaded
-            document.getElementById("togglePageName").checked = newShowPageName;
-            document.getElementById("historyLengthDisplay").textContent =
-              newHistoryLength;
-            updateFrameList(history, currentIndex);
-            updateFavoriteList(favorites, currentFavoriteIndex);
-            break;
+    case "loadSettings":
+  const settingsItems = Array.from(document.querySelectorAll('.settings-item'));
+  
+  // The 'Show Page Names' setting is the second settings item (index 1)
+  const showPageNamesSetting = settingsItems[1];
+  
+  // Use event.data.pluginMessage.editorType to get the editor type
+  if (event.data.pluginMessage.editorType === "figjam") {
+    // Hide the "Show Page Names" setting if in FigJam
+    showPageNamesSetting.style.display = "none";
+  } else {
+    // Make sure it's visible in Figma
+    showPageNamesSetting.style.display = "flex";
+  }
 
           case "showPageNameUpdated":
             // This message should be sent from code.js after the showPageName state is updated

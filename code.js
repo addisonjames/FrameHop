@@ -66,6 +66,7 @@ function loadPluginData() {
     type: "loadSettings",
     showPageName: showPageName,
     historyLength: historyLength,
+    editorType: figma.editorType,
   });
 }
 
@@ -105,7 +106,10 @@ function updateUI() {
       name: node.name || (node.type === 'SECTION' ? 'Section' : 'Unnamed'),
       pageId: page.id,
       pageName: showPageName ? page.name : '',
-      isSection: item.isSection || false
+      isSection: item.isSection || false,
+      // Only include pageName if not in FigJam
+            pageName:
+              figma.editorType === "figma" && showPageName ? page.name : ""
     } : null;
   }).filter(node => node !== null);
 
