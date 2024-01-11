@@ -8,7 +8,7 @@
   "editorType": ["figma"],
   "ui": "ui.html",
     "relaunchButtons": [
-    {"command": "openFrameHop", "name": "Open FrameHop"}
+    {"command": "openFrameHop", "name": "FrameHop"}
   ],
   "menu": [
     {
