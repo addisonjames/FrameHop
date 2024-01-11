@@ -20,7 +20,7 @@
         --hr-color-light: #e6e6e6;
         --highlight-active-frame-color-light: #e5f4ff;
         --scrollbar-color-light: #d9d9d9;
-        --scrollbar-highlight-color-light: #a3a3a3;
+        --scrollbar-highlight-color-light: #bdbdbd;
       }
 
       body {
@@ -41,9 +41,11 @@
         --text-color-secondary: var(--text-color-secondary-light);
         --eyebrow-color: var(--eyebrow-color-light);
         --hr-color: var(--hr-color-light);
-        --highlight-active-frame-color: var(--highlight-active-frame-color-light);
+        --highlight-active-frame-color: var(
+          --highlight-active-frame-color-light
+        );
         --scrollbar-color: var(--scrollbar-color-light);
-        --scrollbar--highlight-color: var(--scrollbar-highlight-color-light);
+        --scrollbar-highlight-color: var(--scrollbar-highlight-color-light);
       }
 
       .eyebrow {
@@ -113,7 +115,7 @@
       .highlight-row-style {
         background-color: var(--highlight-active-frame-color);
       }
-            .page-name-style {
+      .page-name-style {
         color: var(--text-color-secondary);
       }
 
@@ -181,14 +183,16 @@
 
       /* Style for the scrollbar itself */
       ::-webkit-scrollbar {
-        width: 6px; /* Adjust the width of the scrollbar */
+        width: 10px; /* Adjust the width of the scrollbar */
         background: var(--background-color);
       }
 
       /* Style for the scrollbar thumb */
       ::-webkit-scrollbar-thumb {
         background: var(--scrollbar-color); /* Color of the scrollbar thumb */
-        border-radius: 4px; /* Rounded corners for the thumb */
+        border-radius: 6px; /* Rounded corners for the thumb */
+        border: 2px var(--background-color) solid;
+        background-clip: padding-box;
       }
 
       /* Style for the scrollbar thumb on hover */
