@@ -477,7 +477,6 @@
             // More UI reset logic if necessary...
             break;
           case "update":
-          case "update":
             history = historyData;
             currentIndex = historyData.findIndex(
               (frame) => frame.id === currentFrameId
@@ -502,31 +501,34 @@
             updateFavoriteList(favorites, currentFavoriteIndex);
             break;
 
-case "loadSettings":
-  const settingsItems = Array.from(document.querySelectorAll('.settings-item'));
-  
-  // The 'Show Page Names' setting is the second settings item (index 1)
-  const showPageNamesSetting = settingsItems[1];
-  
-  // Use event.data.pluginMessage.editorType to get the editor type
-  if (event.data.pluginMessage.editorType === "figjam") {
-    // Hide the "Show Page Names" setting if in FigJam
-    showPageNamesSetting.style.display = "none";
-  } else {
-    // Make sure it's visible in Figma
-    showPageNamesSetting.style.display = "flex";
-  }
-  
-  // Update the UI with the initial settings when the plugin is reloaded
-  document.getElementById("togglePageName").checked = event.data.pluginMessage.showPageName;
-  document.getElementById("historyLengthDisplay").textContent = event.data.pluginMessage.historyLength;
-  
-  // Update frame list and favorite list
-  updateFrameList(historyData, currentFrameId);
-  updateFavoriteList(updatedFavorites, currentFavoriteIndex);
-  
-  break;
+          case "loadSettings":
+            const settingsItems = Array.from(
+              document.querySelectorAll(".settings-item")
+            );
 
+            // The 'Show Page Names' setting is the second settings item (index 1)
+            const showPageNamesSetting = settingsItems[1];
+
+            // Use event.data.pluginMessage.editorType to get the editor type
+            if (event.data.pluginMessage.editorType === "figjam") {
+              // Hide the "Show Page Names" setting if in FigJam
+              showPageNamesSetting.style.display = "none";
+            } else {
+              // Make sure it's visible in Figma
+              showPageNamesSetting.style.display = "flex";
+            }
+
+            // Update the UI with the initial settings when the plugin is reloaded
+            document.getElementById("togglePageName").checked =
+              event.data.pluginMessage.showPageName;
+            document.getElementById("historyLengthDisplay").textContent =
+              event.data.pluginMessage.historyLength;
+
+            // Update frame list and favorite list
+            updateFrameList(historyData, currentFrameId);
+            updateFavoriteList(updatedFavorites, currentFavoriteIndex);
+
+            break;
 
           case "showPageNameUpdated":
             // This message should be sent from code.js after the showPageName state is updated
