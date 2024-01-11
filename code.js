@@ -144,7 +144,7 @@ function updateUI() {
     favorites: favorites, // Send the updated favorites array
     currentFavoriteIndex: currentFavoriteIndex,
     showPageName: showPageName,
-    historyLength: historyLength
+    historyLength: historyLength,
   });
 
   console.log("updateUI - Recent history for UI:", recentHistory);
@@ -263,10 +263,27 @@ function cycleHistoryLength() {
   historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
   console.log("Cycled history length to:", historyLength); // Debug log
 
+  // Save the current frame ID and favorite ID
+  const currentFrameId = history[currentIndex]
+    ? history[currentIndex].frameId
+    : null;
+  const currentFavoriteId = favorites[currentFavoriteIndex]
+    ? favorites[currentFavoriteIndex].id
+    : null;
+
   if (history.length > historyLength) {
     history = history.slice(-historyLength);
-    currentIndex = Math.min(currentIndex, history.length - 1); // Ensure currentIndex isn't out of bounds
   }
+
+  // Re-identify the currentIndex and currentFavoriteIndex based on the saved IDs
+  currentIndex = history.findIndex((item) => item.frameId === currentFrameId);
+  currentFavoriteIndex = favorites.findIndex(
+    (fav) => fav.id === currentFavoriteId
+  );
+
+  // Ensure currentIndex and currentFavoriteIndex aren't out of bounds
+  currentIndex = Math.max(currentIndex, -1);
+  currentFavoriteIndex = Math.max(currentFavoriteIndex, -1);
 
   updatePluginData(); // Save the updated history length setting
   updateUI(); // Reflect changes in the UI
@@ -276,6 +293,9 @@ function cycleHistoryLength() {
   figma.ui.postMessage({
     type: "updateHistoryLengthDisplay",
     historyLength: historyLength,
+    // Include the currentFrameId and currentFavoriteIndex to maintain the selection
+    currentFrameId: currentFrameId,
+    currentFavoriteIndex: currentFavoriteIndex
   });
 }
 
