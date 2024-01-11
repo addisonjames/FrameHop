@@ -376,6 +376,13 @@
         const truncateLength = 77; // Truncation length for frame names in favorites
 
         favorites.forEach((frame, index) => {
+          // Fetch the latest node information from Figma
+          const node = parent.postMessage(
+            { pluginMessage: { type: "fetchNodeInfo", frameId: frame.id } },
+            "*"
+          );
+          const updatedFrameName = node && node.name ? node.name : frame.name;
+
           const listItem = document.createElement("li");
           listItem.classList.add("favorite-item");
 
@@ -391,14 +398,14 @@
             toggleFavorite(frame);
             updateFavoriteList(favorites, currentFavoriteIndex);
           };
-          nameContainer.appendChild(star);
+          listItem.appendChild(star);
 
           const frameName = document.createElement("span");
           frameName.textContent =
-            frame.name.length > truncateLength
-              ? frame.name.substring(0, truncateLength - 3) + "..."
-              : frame.name;
-          nameContainer.appendChild(frameName);
+            updatedFrameName.length > truncateLength
+              ? updatedFrameName.substring(0, truncateLength - 3) + "..."
+              : updatedFrameName;
+          listItem.appendChild(frameName);
 
           listItem.appendChild(nameContainer);
 
@@ -410,11 +417,8 @@
           const upArrow = document.createElement("span");
           upArrow.innerHTML = "&#8593;"; // Unicode for up arrow
           upArrow.classList.add("arrow-icon", "up-arrow");
-          if (index === 0) upArrow.style.visibility = "hidden";
-          upArrow.onclick = (event) => {
-            event.stopPropagation();
-            moveFavorite(index, -1);
-          };
+          if (index === 0) upArrow.style.visibility = "hidden"; // Hide up arrow for the first item
+          upArrow.onclick = () => moveFavorite(index, -1);
           arrowContainer.appendChild(upArrow);
 
           // Create down arrow
@@ -422,22 +426,27 @@
           downArrow.innerHTML = "&#8595;"; // Unicode for down arrow
           downArrow.classList.add("arrow-icon", "down-arrow");
           if (index === favorites.length - 1)
-            downArrow.style.visibility = "hidden";
-          downArrow.onclick = (event) => {
-            event.stopPropagation();
-            moveFavorite(index, 1);
-          };
+            downArrow.style.visibility = "hidden"; // Hide down arrow for the last item
+          downArrow.onclick = () => moveFavorite(index, 1);
           arrowContainer.appendChild(downArrow);
 
           listItem.appendChild(arrowContainer);
+          // Append the arrow container to the listItem
+          listItem.appendChild(arrowContainer);
 
-          listItem.onclick = () => {
-            jumpToFrame(frame.id, frame.pageId);
-            currentFavoriteIndex = index;
-            updateFavoriteList(favorites, currentFavoriteIndex);
+          listItem.onclick = (event) => {
+            const starWidth = star.offsetWidth;
+            const clickX =
+              event.clientX - listItem.getBoundingClientRect().left;
+            if (clickX > starWidth) {
+              jumpToFrame(frame.id, frame.pageId);
+              currentFavoriteIndex = index;
+              updateFavoriteList(favorites, currentFavoriteIndex);
+            }
           };
 
           if (currentFavoriteIndex === index) {
+            listItem.style.backgroundColor = "";
             listItem.classList.add("highlight-row-style");
           }
 
@@ -656,19 +665,7 @@
 
             document.getElementById("historyLengthDisplay").textContent =
               newHistoryLength;
-
-            // Recalculate the current index in history
-            currentIndex = history.findIndex(
-              (frame) => frame.id === currentFrameId
-            );
-
-            // Recalculate the current index in favorites
-            currentFavoriteIndex = favorites.findIndex(
-              (fav) => fav.id === currentFrameId
-            );
-
-            // Update the lists with the recalculated indices
-            updateFrameList(history, currentFrameId);
+            updateFrameList(history, currentIndex);
             updateFavoriteList(favorites, currentFavoriteIndex);
             break;
 
