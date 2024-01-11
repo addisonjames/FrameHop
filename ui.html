@@ -347,55 +347,58 @@
         });
       }
 
-  function updateFavoriteList(favorites, currentFavoriteIndex) {
-    const list = document.getElementById("favoriteList");
-    list.innerHTML = "";
-    const truncateLength = 77; // Truncation length for frame names in favorites
+      function updateFavoriteList(favorites, currentFavoriteIndex) {
+        const list = document.getElementById("favoriteList");
+        list.innerHTML = "";
+        const truncateLength = 77; // Truncation length for frame names in favorites
 
-    favorites.forEach((frame, index) => {
-      // Fetch the latest node information from Figma
-      const node = parent.postMessage({ pluginMessage: { type: "fetchNodeInfo", frameId: frame.id } }, "*");
-      const updatedFrameName = node && node.name ? node.name : frame.name;
+        favorites.forEach((frame, index) => {
+          // Fetch the latest node information from Figma
+          const node = parent.postMessage(
+            { pluginMessage: { type: "fetchNodeInfo", frameId: frame.id } },
+            "*"
+          );
+          const updatedFrameName = node && node.name ? node.name : frame.name;
 
-      const listItem = document.createElement("li");
-      listItem.classList.add("favorite-item");
+          const listItem = document.createElement("li");
+          listItem.classList.add("favorite-item");
 
-      const star = document.createElement("span");
-      star.classList.add("favorite-star-icon");
-      star.textContent = "★";
-      star.onclick = (event) => {
-        event.stopPropagation();
-        toggleFavorite(frame);
-        updateFavoriteList(favorites, currentFavoriteIndex);
-      };
-      listItem.appendChild(star);
+          const star = document.createElement("span");
+          star.classList.add("favorite-star-icon");
+          star.textContent = "★";
+          star.onclick = (event) => {
+            event.stopPropagation();
+            toggleFavorite(frame);
+            updateFavoriteList(favorites, currentFavoriteIndex);
+          };
+          listItem.appendChild(star);
 
-      const frameName = document.createElement("span");
-      frameName.textContent =
-        updatedFrameName.length > truncateLength
-          ? updatedFrameName.substring(0, truncateLength - 3) + "..."
-          : updatedFrameName;
-      listItem.appendChild(frameName);
+          const frameName = document.createElement("span");
+          frameName.textContent =
+            updatedFrameName.length > truncateLength
+              ? updatedFrameName.substring(0, truncateLength - 3) + "..."
+              : updatedFrameName;
+          listItem.appendChild(frameName);
 
-      listItem.onclick = (event) => {
-        const starWidth = star.offsetWidth;
-        const clickX =
-          event.clientX - listItem.getBoundingClientRect().left;
-        if (clickX > starWidth) {
-          jumpToFrame(frame.id, frame.pageId);
-          currentFavoriteIndex = index;
-          updateFavoriteList(favorites, currentFavoriteIndex);
-        }
-      };
+          listItem.onclick = (event) => {
+            const starWidth = star.offsetWidth;
+            const clickX =
+              event.clientX - listItem.getBoundingClientRect().left;
+            if (clickX > starWidth) {
+              jumpToFrame(frame.id, frame.pageId);
+              currentFavoriteIndex = index;
+              updateFavoriteList(favorites, currentFavoriteIndex);
+            }
+          };
 
           if (currentFavoriteIndex === index) {
             listItem.style.backgroundColor = "";
             listItem.classList.add("highlight-row-style");
           }
 
-      list.appendChild(listItem);
-    });
-  }
+          list.appendChild(listItem);
+        });
+      }
 
       function toggleFavorite(frame, historyData = null) {
         const isFavorite = favorites.some((fav) => fav.id === frame.id);
@@ -499,7 +502,7 @@
       // It updates the plugin's UI in response to changes in the plugin's state or user interactions.
       // This includes updating the history list, toggling page name visibility, and changing history length settings.
       window.onload = () => {
-          toggleTransition(false); // Disable transition on initial load
+        toggleTransition(false); // Disable transition on initial load
         // Resize handle logic
         const resizeHandle = document.querySelector(".resize-handle");
         resizeHandle.addEventListener("mousedown", (event) => {
@@ -581,20 +584,38 @@
             updateFavoriteList(favorites, currentFavoriteIndex);
             break;
 
-    case "loadSettings":
-  const settingsItems = Array.from(document.querySelectorAll('.settings-item'));
-  
-  // The 'Show Page Names' setting is the second settings item (index 1)
-  const showPageNamesSetting = settingsItems[1];
-  
-  // Use event.data.pluginMessage.editorType to get the editor type
-  if (event.data.pluginMessage.editorType === "figjam") {
-    // Hide the "Show Page Names" setting if in FigJam
-    showPageNamesSetting.style.display = "none";
-  } else {
-    // Make sure it's visible in Figma
-    showPageNamesSetting.style.display = "flex";
-  }
+          case "applyTheme":
+            // Apply the theme received from the main code
+            if (event.data.pluginMessage.theme === "light") {
+              document.body.classList.add("light-mode");
+            } else {
+              document.body.classList.remove("light-mode");
+            }
+            break;
+
+          case "loadSettings":
+            const settingsItems = Array.from(
+              document.querySelectorAll(".settings-item")
+            );
+
+            // The 'Show Page Names' setting is the second settings item (index 1)
+            const showPageNamesSetting = settingsItems[1];
+
+            // Related to Theme
+            const theme = event.data.pluginMessage.theme;
+            document.body.classList.toggle("light-mode", theme === "light");
+            document.getElementById("toggleTheme").checked = theme === "light";
+
+            // Use event.data.pluginMessage.editorType to get the editor type
+            if (event.data.pluginMessage.editorType === "figjam") {
+              // Hide the "Show Page Names" setting if in FigJam
+              showPageNamesSetting.style.display = "none";
+            } else {
+              // Make sure it's visible in Figma
+              showPageNamesSetting.style.display = "flex";
+            }
+
+            
 
           case "showPageNameUpdated":
             // This message should be sent from code.js after the showPageName state is updated
