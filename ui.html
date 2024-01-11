@@ -2,24 +2,62 @@
 <html>
   <head>
     <style>
+      :root {
+        /* Dark theme colors */
+        --background-color: #2c2c2c;
+        --text-color: #ffffff;
+        --text-color-secondary: #bfbfbf;
+        --eyebrow-color: #ffffff;
+        --hr-color: #444444;
+        --highlight-active-frame-color: #4d5875;
+        --scrollbar-color: #707070;
+        --scrollbar-highlight-color: #545454;
+        /* Light theme colors */
+        --background-color-light: #ffffff;
+        --text-color-light: #1a1a1a;
+        --text-color-secondary-light: #7f7f7f;
+        --eyebrow-color-light: #1a1a1a;
+        --hr-color-light: #e6e6e6;
+        --highlight-active-frame-color-light: #e5f4ff;
+        --scrollbar-color-light: #d9d9d9;
+        --scrollbar-highlight-color-light: #bdbdbd;
+      }
+
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
         font-size: 9pt;
         margin: 0;
         padding: 0 0 8 0px;
-        background-color: #2c2c2c;
-        color: #ffffff;
+        background-color: var(--background-color);
+        color: var(--text-color);
         user-select: none;
       }
 
+      .light-mode {
+        --background-color: var(--background-color-light);
+        --text-color: var(--text-color-light);
+        --text-color-secondary: var(--text-color-secondary-light);
+        --eyebrow-color: var(--eyebrow-color-light);
+        --hr-color: var(--hr-color-light);
+        --highlight-active-frame-color: var(
+          --highlight-active-frame-color-light
+        );
+        --scrollbar-color: var(--scrollbar-color-light);
+        --scrollbar-highlight-color: var(--scrollbar-highlight-color-light);
+      }
+
+      .enable-transition {
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+      }
+
       .eyebrow {
-        font-size: 8pt; /* 8pt font size */
-        text-transform: none; /* All caps */
-        font-weight: bold; /* Bold font */
+        font-size: 8pt;
+        text-transform: none;
+        font-weight: bold;
         margin-top: 0;
-        color: #ffffff;
-        padding: 8 8 8 8px; /* Should be 12px */
+        padding: 8px;
+        color: var(--eyebrow-color);
       }
 
       .eyebrow-top {
@@ -30,7 +68,7 @@
       .hr {
         border: none;
         height: 1px;
-        background-color: #444444; /* Divider color */
+        background-color: var(--hr-color);
         margin: 8px 0; /* Vertical spacing, adjust as needed */
         width: 100%; /* Default width, can be adjusted as needed */
       }
@@ -77,8 +115,11 @@
         padding: 0 12px;
       }
 
+      .highlight-row-style {
+        background-color: var(--highlight-active-frame-color);
+      }
       .page-name-style {
-        color: #888888;
+        color: var(--text-color-secondary);
       }
 
       /* Style for star icon in favorite list */
@@ -96,7 +137,7 @@
       .settings-title {
         font-size: 8pt; /* Adjust if needed */
         font-weight: bold; /* Bold font */
-        color: #bfbfbf; /* White color text */
+        color: var(--text-color-secondary);
         padding: 8px; /* Adjust padding as needed */
         /* Add any additional styles you want for the settings title */
       }
@@ -108,7 +149,7 @@
         justify-content: space-between; /* Keep items on each end */
         height: 32px;
         padding: 0 16px;
-        color: #bfbfbf; /* White color text */
+        color: var(--text-color-secondary);
         cursor: default;
         margin-bottom: 4px; /* Spacing between settings options, same as history item spacing */
       }
@@ -117,8 +158,9 @@
       .styled-checkbox {
         accent-color: #3e8ae2; /* Set the border color of the checkbox when it's unchecked */
         cursor: pointer;
-        background-color: #2c2c2c; /* Set the background to transparent when unchecked */
-        border: 1px solid #ffffff; /* Add a border to the checkbox */
+        background-color: var(
+          --background-color
+        ); /* Set the background to transparent when unchecked */
       }
 
       #clearData {
@@ -127,7 +169,7 @@
 
       .history-length {
         cursor: pointer;
-        color: #ffffff;
+        color: var(--text-color);
         padding-right: 4px;
         /* Styles to make it look clickable and align it with the star/checkbox */
       }
@@ -144,19 +186,23 @@
 
       /* Style for the scrollbar itself */
       ::-webkit-scrollbar {
-        width: 6px; /* Adjust the width of the scrollbar */
-        background: #2c2c2c; /* Makes the track background transparent */
+        width: 10px; /* Adjust the width of the scrollbar */
+        background: var(--background-color);
       }
 
       /* Style for the scrollbar thumb */
       ::-webkit-scrollbar-thumb {
-        background: #888; /* Color of the scrollbar thumb */
-        border-radius: 4px; /* Rounded corners for the thumb */
+        background: var(--scrollbar-color); /* Color of the scrollbar thumb */
+        border-radius: 6px; /* Rounded corners for the thumb */
+        border: 2px var(--background-color) solid;
+        background-clip: padding-box;
       }
 
       /* Style for the scrollbar thumb on hover */
       ::-webkit-scrollbar-thumb:hover {
-        background: #555; /* Darker color on hover */
+        background: var(
+          --scrollbar-highlight-color
+        ); /* Darker color on hover */
       }
     </style>
   </head>
@@ -179,13 +225,10 @@
     <!-- Settings -->
     <div class="settings-title">Settings</div>
 
-    <!-- Setting: History Length -->
+    <!-- Setting: Light/Dark Toggle -->
     <div class="settings-item">
-      History Length
-      <span id="historyLengthDisplay" class="history-length">
-        <!-- Initial default value -->
-        16
-      </span>
+      Light Mode
+      <input type="checkbox" id="toggleTheme" class="styled-checkbox" />
     </div>
 
     <!-- Setting: Toggle Page Names -->
@@ -197,6 +240,15 @@
         class="styled-checkbox"
         checked
       />
+    </div>
+
+    <!-- Setting: History Length -->
+    <div class="settings-item">
+      History Length
+      <span id="historyLengthDisplay" class="history-length">
+        <!-- Initial default value -->
+        16
+      </span>
     </div>
 
     <!-- Setting: Clear Data -->
@@ -285,7 +337,8 @@
 
           // Highlight the current frame if found
           if (frame.id === currentFrameId && !currentFrameFound) {
-            listItem.style.backgroundColor = "#4D5875";
+            listItem.style.backgroundColor = "";
+            listItem.classList.add("highlight-row-style");
             currentFrameFound = true;
           }
 
@@ -335,9 +388,10 @@
         }
       };
 
-      if (currentFavoriteIndex === index) {
-        listItem.style.backgroundColor = "#4D5875";
-      }
+          if (currentFavoriteIndex === index) {
+            listItem.style.backgroundColor = "";
+            listItem.classList.add("highlight-row-style");
+          }
 
       list.appendChild(listItem);
     });
@@ -369,6 +423,15 @@
         );
       }
 
+      function toggleTransition(enable) {
+        const body = document.body;
+        if (enable) {
+          body.classList.add("enable-transition");
+        } else {
+          body.classList.remove("enable-transition");
+        }
+      }
+
       // Function to handle the 'Clear Data' button click
       document.getElementById("clearData").onclick = function () {
         // Reset local history, currentIndex, and favorites
@@ -390,6 +453,25 @@
         .addEventListener("click", function () {
           parent.postMessage(
             { pluginMessage: { type: "cycleHistoryLength" } },
+            "*"
+          );
+        });
+
+      // Function to toggle light/dark mode
+      document
+        .getElementById("toggleTheme")
+        .addEventListener("change", function (event) {
+          toggleTransition(true); // Enable transition
+
+          setTimeout(() => {
+            toggleTransition(false); // Disable transition after some time
+          }, 300); // Duration should match the CSS transition duration
+
+          const newTheme = event.target.checked ? "light" : "dark";
+          document.body.classList.toggle("light-mode", event.target.checked);
+
+          parent.postMessage(
+            { pluginMessage: { type: "updateTheme", theme: newTheme } },
             "*"
           );
         });
@@ -417,6 +499,7 @@
       // It updates the plugin's UI in response to changes in the plugin's state or user interactions.
       // This includes updating the history list, toggling page name visibility, and changing history length settings.
       window.onload = () => {
+          toggleTransition(false); // Disable transition on initial load
         // Resize handle logic
         const resizeHandle = document.querySelector(".resize-handle");
         resizeHandle.addEventListener("mousedown", (event) => {
@@ -473,7 +556,6 @@
             document.getElementById("togglePageName").checked = true; // Reset to default if needed
             // More UI reset logic if necessary...
             break;
-          case "update":
           case "update":
             history = historyData;
             currentIndex = historyData.findIndex(

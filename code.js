@@ -4,9 +4,16 @@ let favorites = [];
 let showPageName = true; // Control the display of the page name
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
+let currentTheme = "dark"; // Default theme
 
   // Set relaunch data with a descriptive string for the relaunch button
 figma.root.setRelaunchData({ openFrameHop: "" });
+
+// Check if the editor type is FigJam, and adjust settings accordingly
+if (figma.editorType === "figjam") {
+  showPageName = false; // Turn off the "Show Page Names" setting in FigJam
+  currentTheme = "light"; // Change theme to Light in Figjam by default
+}
 
 function updatePluginData() {
   const data = {
@@ -17,6 +24,7 @@ function updatePluginData() {
       // Include the settings in the data object
       showPageName: showPageName,
       historyLength: historyLength,
+      theme: currentTheme,
     },
   };
   figma.root.setPluginData("frameHopData", JSON.stringify(data));
@@ -39,6 +47,7 @@ function loadPluginData() {
           ? parsedData.settings.showPageName
           : showPageName;
       historyLength = parsedData.settings.historyLength || historyLength;
+      currentTheme = parsedData.settings.theme || currentTheme; // Add this line
     }
   } else {
     history = [];
@@ -67,6 +76,7 @@ function loadPluginData() {
     showPageName: showPageName,
     historyLength: historyLength,
     editorType: figma.editorType,
+    theme: currentTheme, // Added when trying to get Figjam theme to default to light but didn't work
   });
 }
 
@@ -261,6 +271,7 @@ figma.ui.onmessage = (msg) => {
     case "jumpToFrame":
       jumpToFrame(msg.frameId);
       break;
+
     case "clearData":
       // Reset the data
       history = [];
@@ -273,6 +284,7 @@ figma.ui.onmessage = (msg) => {
       figma.ui.postMessage({ type: "dataCleared" });
       updateUI();
       break;
+
     case "updateFavorites":
       favorites = msg.favorites.map((fav) => ({
         id: fav.id,
@@ -284,6 +296,7 @@ figma.ui.onmessage = (msg) => {
       updatePluginData();
       updateUI();
       break;
+
     case "togglePageName":
       showPageName = msg.value;
       updatePluginData();
@@ -293,18 +306,31 @@ figma.ui.onmessage = (msg) => {
       });
       updateUI();
       break;
+
     case "cycleHistoryLength":
       cycleHistoryLength(); // This function now should call updatePluginData internally
       break;
+
     case "resize":
       const { width, height } = msg;
       figma.ui.resize(width, height);
       figma.clientStorage.setAsync("frameHopWindowSize", { width, height });
       break;
+
+    case "updateTheme":
+      // Update the current theme based on the message from the UI
+      currentTheme = msg.theme;
+
+      // Save the updated theme setting
+      updatePluginData();
+
+      // Apply the theme to the UI if necessary
+      figma.ui.postMessage({ type: "applyTheme", theme: currentTheme });
+      break;
   }
 };
 
-// Command handling
+// Command handlindocument.getElementById("toggleTheme").addEventListenerg
 if (figma.command === "openFrameHop") {
   figma.showUI(__html__, { width: 240, height: 360 });
   loadPluginData();
