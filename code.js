@@ -27,6 +27,7 @@ function updatePluginData() {
       theme: currentTheme,
     },
   };
+  console.log("Saving updated plugin data with history length:", historyLength); // Debug log
   figma.root.setPluginData("frameHopData", JSON.stringify(data));
 }
 
@@ -141,8 +142,9 @@ function updateUI() {
     currentFrameId: currentSelectionId,
     currentPageId: figma.currentPage.id,
     favorites: favorites, // Send the updated favorites array
-    currentFavoriteIndex,
-    showPageName,
+    currentFavoriteIndex: currentFavoriteIndex,
+    showPageName: showPageName,
+    historyLength: historyLength
   });
 
   console.log("updateUI - Recent history for UI:", recentHistory);
@@ -259,6 +261,7 @@ function cycleHistoryLength() {
   const lengths = [4, 8, 16];
   let currentLengthIndex = lengths.indexOf(historyLength);
   historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
+  console.log("Cycled history length to:", historyLength); // Debug log
 
   if (history.length > historyLength) {
     history = history.slice(-historyLength);
@@ -267,6 +270,7 @@ function cycleHistoryLength() {
 
   updatePluginData(); // Save the updated history length setting
   updateUI(); // Reflect changes in the UI
+  console.log("Updated plugin data and UI after cycling history length"); // Debug log
 
   // Send a message to the UI to update the history length display
   figma.ui.postMessage({

@@ -625,14 +625,23 @@
             document.getElementById("togglePageName").checked = true; // Reset to default if needed
             // More UI reset logic if necessary...
             break;
+
           case "update":
+            // Update history with the data received from the main plugin script
             history = historyData;
+            // Find the current index based on the frame ID
             currentIndex = historyData.findIndex(
               (frame) => frame.id === currentFrameId
             );
+            // Update favorites with the data received
             favorites = updatedFavorites;
+            // Update the list of frames in the UI
             updateFrameList(historyData, currentFrameId);
+            // Update the list of favorites in the UI
             updateFavoriteList(favorites, currentFavoriteIndex);
+            // Update the history length display in the UI
+            document.getElementById("historyLengthDisplay").textContent =
+              event.data.pluginMessage.historyLength;
             break;
 
           case "toggleShowPageName":
@@ -644,6 +653,11 @@
             break;
 
           case "updateHistoryLengthDisplay":
+            console.log(
+              "Updating history length display to:",
+              event.data.pluginMessage.historyLength
+            ); // Debug log
+
             document.getElementById("historyLengthDisplay").textContent =
               newHistoryLength;
             updateFrameList(history, currentIndex);
@@ -664,21 +678,27 @@
               document.querySelectorAll(".settings-item")
             );
 
-  // The 'Show Page Names' setting is the second settings item (index 1)
-  const showPageNamesSetting = document.getElementById("togglePageName");
+            // The 'Show Page Names' setting is the second settings item (index 1)
+            const showPageNamesSetting =
+              document.getElementById("togglePageName");
 
-  // Update the checkbox state based on the message
-  showPageNamesSetting.checked = event.data.pluginMessage.showPageName;
+            // Update the checkbox state based on the message
+            showPageNamesSetting.checked =
+              event.data.pluginMessage.showPageName;
 
-  // Related to Theme
-  const theme = event.data.pluginMessage.theme;
-  document.body.classList.toggle("light-mode", theme === "light");
-  document.getElementById("toggleTheme").checked = theme === "light";
+            // Related to Theme
+            const theme = event.data.pluginMessage.theme;
+            document.body.classList.toggle("light-mode", theme === "light");
+            document.getElementById("toggleTheme").checked = theme === "light";
 
-  // Display settings according to editor type
-  const pageNamesSettingItem = document.querySelectorAll(".settings-item")[1];
-  pageNamesSettingItem.style.display = event.data.pluginMessage.editorType === "figjam" ? "none" : "flex";
-  break;
+            // Display settings according to editor type
+            const pageNamesSettingItem =
+              document.querySelectorAll(".settings-item")[1];
+            pageNamesSettingItem.style.display =
+              event.data.pluginMessage.editorType === "figjam"
+                ? "none"
+                : "flex";
+            break;
 
             // Use event.data.pluginMessage.editorType to get the editor type
             if (event.data.pluginMessage.editorType === "figjam") {
