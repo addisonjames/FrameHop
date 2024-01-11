@@ -133,6 +133,12 @@
         margin: 0 4 0 4px; /* Adjust the space between the star and the frame name */
       }
 
+      .arrow-icon {
+        cursor: pointer;
+        margin: 0 4px;
+        /* Add any additional styles here */
+      }
+
       /* New class for the settings title similar to History */
       .settings-title {
         font-size: 8pt; /* Adjust if needed */
@@ -373,6 +379,20 @@
           };
           listItem.appendChild(star);
 
+                  // Create up arrow
+        const upArrow = document.createElement('span');
+        upArrow.innerHTML = '&#8593;'; // Unicode for up arrow
+        upArrow.classList.add('arrow-icon', 'up-arrow');
+        upArrow.onclick = () => moveFavorite(index, -1);
+        listItem.appendChild(upArrow);
+
+        // Create down arrow
+        const downArrow = document.createElement('span');
+        downArrow.innerHTML = '&#8595;'; // Unicode for down arrow
+        downArrow.classList.add('arrow-icon', 'down-arrow');
+        downArrow.onclick = () => moveFavorite(index, 1);
+        listItem.appendChild(downArrow);
+
           const frameName = document.createElement("span");
           frameName.textContent =
             updatedFrameName.length > truncateLength
@@ -418,6 +438,17 @@
           "*"
         );
       }
+
+  function moveFavorite(index, direction) {
+    if ((direction === -1 && index > 0) || (direction === 1 && index < favorites.length - 1)) {
+      const itemToMove = favorites[index];
+      const newIndex = index + direction;
+      favorites.splice(index, 1);
+      favorites.splice(newIndex, 0, itemToMove);
+      updateFavoriteList(favorites, currentFavoriteIndex);
+      parent.postMessage({ pluginMessage: { type: "updateFavoritesOrder", favorites } }, "*");
+    }
+  }
 
       function jumpToFrame(frameId, pageId) {
         parent.postMessage(

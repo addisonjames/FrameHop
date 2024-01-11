@@ -297,6 +297,11 @@ figma.ui.onmessage = (msg) => {
       updateUI();
       break;
 
+    case "updateFavoritesOrder":
+      favorites = msg.favorites;
+      updatePluginData();
+      break;
+
     case "togglePageName":
       showPageName = msg.value;
       updatePluginData();
