@@ -75,7 +75,7 @@ function loadPluginData() {
     showPageName: showPageName,
     historyLength: historyLength,
     editorType: figma.editorType,
-    theme: currentTheme,
+    theme: currentTheme, // Added when trying to get Figjam theme to default to light but didn't work
   });
 }
 
