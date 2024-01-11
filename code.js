@@ -5,14 +5,6 @@ let showPageName = true; // Control the display of the page name
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
 
-// Set relaunch data with a descriptive string for the relaunch button
-figma.root.setRelaunchData({ openFrameHop: "" });
-
-// Check if the editor type is FigJam, and adjust settings accordingly
-if (figma.editorType === "figjam") {
-  showPageName = false; // Turn off the "Show Page Names" setting in FigJam
-}
-
 function updatePluginData() {
   const data = {
     history,
@@ -67,82 +59,68 @@ function loadPluginData() {
 
   updateUI();
   // Send the initial settings to the UI when the plugin is reloaded
-  // Also send the editorType to the UI to adjust visibility of elements
   figma.ui.postMessage({
     type: "loadSettings",
     showPageName: showPageName,
     historyLength: historyLength,
-    editorType: figma.editorType,
   });
 }
 
 function updateUI() {
   // This variable will hold the ID of the currently selected frame, if any
-  const currentSelectionId =
-    figma.currentPage.selection.length > 0
-      ? figma.currentPage.selection[0].id
-      : null;
+  const currentSelectionId = figma.currentPage.selection.length > 0
+    ? figma.currentPage.selection[0].id
+    : null;
 
   // Update currentFavoriteIndex based on the current selection
-  currentFavoriteIndex = favorites.findIndex(
-    (fav) => fav.id === currentSelectionId
-  );
+  currentFavoriteIndex = favorites.findIndex(fav => fav.id === currentSelectionId);
 
-  favorites = favorites
-    .map((fav) => {
-      const node = figma.getNodeById(fav.id);
-      if (node) {
-        // Update the favorite with the latest name from the Figma document
-        return {
-          id: fav.id,
-          name: node.name,
-          isSection: fav.isSection,
-        };
-      } else {
-        // If the node is not found, return null to filter it out
-        return null;
-      }
-    })
-    .filter((fav) => fav !== null); // Filter out any favorites that might have been deleted
+  favorites = favorites.map(fav => {
+    const node = figma.getNodeById(fav.id);
+    if (node) {
+      // Update the favorite with the latest name from the Figma document
+      return {
+        id: fav.id,
+        name: node.name,
+        isSection: fav.isSection
+      };
+    } else {
+      // If the node is not found, return null to filter it out
+      return null;
+    }
+  }).filter(fav => fav !== null); // Filter out any favorites that might have been deleted
 
   // Slice the history to respect the historyLength setting
   const limitedHistory = history.slice(-historyLength);
 
   // Reverse the history for display purposes
-  const recentHistory = limitedHistory
-    .reverse()
-    .map((item) => {
-      const node = figma.getNodeById(item.frameId);
-      const page = node ? figma.getNodeById(item.pageId) : null;
-      return node && page
-        ? {
-            id: node.id,
-            name:
-              node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
-            pageId: page.id,
-            isSection: item.isSection || false,
-            // Only include pageName if not in FigJam
-            pageName:
-              figma.editorType === "figma" && showPageName ? page.name : "",
-          }
-        : null;
-    })
-    .filter((node) => node !== null);
+  const recentHistory = limitedHistory.reverse().map(item => {
+    const node = figma.getNodeById(item.frameId);
+    const page = node ? figma.getNodeById(item.pageId) : null;
+    return node && page ? {
+      id: node.id,
+      name: node.name || (node.type === 'SECTION' ? 'Section' : 'Unnamed'),
+      pageId: page.id,
+      pageName: showPageName ? page.name : '',
+      isSection: item.isSection || false
+    } : null;
+  }).filter(node => node !== null);
 
   // Send the updated information to the UI
   figma.ui.postMessage({
-    type: "update",
+    type: 'update',
     historyData: recentHistory,
     currentFrameId: currentSelectionId,
     currentPageId: figma.currentPage.id,
     favorites: favorites, // Send the updated favorites array
     currentFavoriteIndex,
-    showPageName,
+    showPageName
   });
 
   console.log("updateUI - Recent history for UI:", recentHistory);
   console.log("updateUI - Updated favorites:", favorites); // Additional log for debugging
 }
+
 
 function jumpToFrame(frameId) {
   const targetFrame = figma.getNodeById(frameId);
@@ -150,7 +128,7 @@ function jumpToFrame(frameId) {
   if (targetFrame) {
     let targetPage = targetFrame.parent;
     // Traverse up the node hierarchy until we find a page.
-    while (targetPage && targetPage.type !== "PAGE") {
+    while (targetPage && targetPage.type !== 'PAGE') {
       targetPage = targetPage.parent;
     }
 
@@ -160,8 +138,8 @@ function jumpToFrame(frameId) {
       figma.viewport.scrollAndZoomIntoView([targetFrame]);
 
       // Update currentIndex and currentFavoriteIndex
-      currentIndex = history.findIndex((item) => item.frameId === frameId);
-      currentFavoriteIndex = favorites.findIndex((item) => item.id === frameId);
+      currentIndex = history.findIndex(item => item.frameId === frameId);
+      currentFavoriteIndex = favorites.findIndex(item => item.id === frameId);
 
       console.log("Jumped to Frame:", frameId, "on Page:", targetPage.name);
     } else {
@@ -172,6 +150,7 @@ function jumpToFrame(frameId) {
   }
   updateUI();
 }
+
 
 function updateHistory() {
   const currentSelection = figma.currentPage.selection;
