@@ -7,6 +7,9 @@
   "enableProposedApi": false,
   "editorType": ["figma"],
   "ui": "ui.html",
+    "relaunchButtons": [
+    {"command": "openFrameHop", "name": "Open FrameHop"}
+  ],
   "menu": [
     {
       "name": "Open FrameHop",

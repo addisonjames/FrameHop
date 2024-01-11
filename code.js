@@ -5,6 +5,9 @@ let showPageName = true; // Control the display of the page name
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
 
+// Set relaunch data with a descriptive string for the relaunch button
+figma.root.setRelaunchData({ openFrameHop: '' });
+
 function updatePluginData() {
   const data = {
     history,
