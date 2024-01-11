@@ -75,6 +75,7 @@ function loadPluginData() {
     showPageName: showPageName,
     historyLength: historyLength,
     editorType: figma.editorType,
+    theme: currentTheme,
   });
 }
 

@@ -2,17 +2,19 @@
 <html>
   <head>
     <style>
-      :root {
-        /* Dark theme colors */
-        --background-color: #2c2c2c;
-        --text-color: #ffffff;
-        --hr-color: #444444;
-        --text-color-secondary: #888888;
-        /* Light theme colors */
-        --background-color-light: #ffffff;
-        --text-color-light: #1a1a1a;
-        --hr-color-light: #e6e6e6;
-      }
+:root {
+  /* Dark theme colors */
+  --background-color: #2c2c2c;
+  --text-color: #ffffff;
+  --hr-color: #444444;
+  --text-color-secondary: #888888; /* For both themes if the color is the same */
+  --eyebrow-color: #ffffff;
+  /* Light theme colors */
+  --background-color-light: #ffffff;
+  --text-color-light: #1a1a1a;
+  --hr-color-light: #e6e6e6;
+  --eyebrow-color-light: #1a1a1a;
+}
 
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -23,21 +25,24 @@
         background-color: var(--background-color);
         color: var(--text-color);
         user-select: none;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
       }
 
-      .light-mode {
-        --background-color: var(--background-color-light);
-        --text-color: var(--text-color-light);
-        --hr-color: var(--hr-color-light);
-      }
+.light-mode {
+  --background-color: var(--background-color-light);
+  --text-color: var(--text-color-light);
+  --hr-color: var(--hr-color-light);
+  --eyebrow-color: var(--eyebrow-color-light);
+}
+
 
       .eyebrow {
-        font-size: 8pt; /* 8pt font size */
-        text-transform: none; /* All caps */
-        font-weight: bold; /* Bold font */
+        font-size: 8pt;
+        text-transform: none;
+        font-weight: bold;
         margin-top: 0;
-        color: #ffffff;
-        padding: 8 8 8 8px; /* Should be 12px */
+        padding: 8px;
+        color: var(--eyebrow-color);
       }
 
       .eyebrow-top {
@@ -422,23 +427,15 @@
         });
 
       // Function to toggle light/dark mode
-      document
-        .getElementById("toggleTheme")
-        .addEventListener("change", function (event) {
-          if (event.target.checked) {
-            document.body.classList.add("light-mode");
-          } else {
-            document.body.classList.remove("light-mode");
-          }
-          // Send the new theme to the plugin's main code if needed
-          const newTheme = document.body.classList.contains("light-mode")
-            ? "light"
-            : "dark";
-          parent.postMessage(
-            { pluginMessage: { type: "updateTheme", theme: newTheme } },
-            "*"
-          );
-        });
+document.getElementById("toggleTheme").addEventListener("change", function(event) {
+  document.body.classList.toggle("light-mode");
+
+  // Send the new theme to the plugin's main code if needed
+  const newTheme = document.body.classList.contains("light-mode") ? "light" : "dark";
+  parent.postMessage({ pluginMessage: { type: "updateTheme", theme: newTheme } }, "*");
+});
+
+
 
       // Function to handle the 'Show Page Name' toggle
       document
