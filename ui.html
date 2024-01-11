@@ -32,7 +32,6 @@
         background-color: var(--background-color);
         color: var(--text-color);
         user-select: none;
-        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
       }
 
       .light-mode {
@@ -46,6 +45,10 @@
         );
         --scrollbar-color: var(--scrollbar-color-light);
         --scrollbar-highlight-color: var(--scrollbar-highlight-color-light);
+      }
+
+      .enable-transition {
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
       }
 
       .eyebrow {
@@ -423,6 +426,15 @@
         );
       }
 
+      function toggleTransition(enable) {
+        const body = document.body;
+        if (enable) {
+          body.classList.add("enable-transition");
+        } else {
+          body.classList.remove("enable-transition");
+        }
+      }
+
       // Function to handle the 'Clear Data' button click
       document.getElementById("clearData").onclick = function () {
         // Reset local history, currentIndex, and favorites
@@ -452,12 +464,15 @@
       document
         .getElementById("toggleTheme")
         .addEventListener("change", function (event) {
-          document.body.classList.toggle("light-mode");
+          toggleTransition(true); // Enable transition
 
-          // Send the new theme to the plugin's main code if needed
-          const newTheme = document.body.classList.contains("light-mode")
-            ? "light"
-            : "dark";
+          setTimeout(() => {
+            toggleTransition(false); // Disable transition after some time
+          }, 300); // Duration should match the CSS transition duration
+
+          const newTheme = event.target.checked ? "light" : "dark";
+          document.body.classList.toggle("light-mode", event.target.checked);
+
           parent.postMessage(
             { pluginMessage: { type: "updateTheme", theme: newTheme } },
             "*"
@@ -487,6 +502,7 @@
       // It updates the plugin's UI in response to changes in the plugin's state or user interactions.
       // This includes updating the history list, toggling page name visibility, and changing history length settings.
       window.onload = () => {
+          toggleTransition(false); // Disable transition on initial load
         // Resize handle logic
         const resizeHandle = document.querySelector(".resize-handle");
         resizeHandle.addEventListener("mousedown", (event) => {
@@ -584,6 +600,11 @@
 
             // The 'Show Page Names' setting is the second settings item (index 1)
             const showPageNamesSetting = settingsItems[1];
+
+            // Related to Theme
+            const theme = event.data.pluginMessage.theme;
+            document.body.classList.toggle("light-mode", theme === "light");
+            document.getElementById("toggleTheme").checked = theme === "light";
 
             // Use event.data.pluginMessage.editorType to get the editor type
             if (event.data.pluginMessage.editorType === "figjam") {
