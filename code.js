@@ -4,6 +4,7 @@ let favorites = [];
 let showPageName = true; // Control the display of the page name
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
+let currentTheme = "dark"; // Default theme
 
 // Set relaunch data with a descriptive string for the relaunch button
 figma.root.setRelaunchData({ openFrameHop: "" });
@@ -11,6 +12,7 @@ figma.root.setRelaunchData({ openFrameHop: "" });
 // Check if the editor type is FigJam, and adjust settings accordingly
 if (figma.editorType === "figjam") {
   showPageName = false; // Turn off the "Show Page Names" setting in FigJam
+  currentTheme = "light"; // Change theme to Light in Figjam by default
 }
 
 function updatePluginData() {
@@ -314,6 +316,12 @@ figma.ui.onmessage = (msg) => {
       const { width, height } = msg;
       figma.ui.resize(width, height);
       figma.clientStorage.setAsync("frameHopWindowSize", { width, height });
+      break;
+    case "updateTheme":
+      // Update the current theme based on the message from the UI
+      currentTheme = msg.theme;
+      // Apply the theme to the UI if necessary
+      figma.ui.postMessage({ type: "applyTheme", theme: currentTheme });
       break;
   }
 };
