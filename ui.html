@@ -146,9 +146,14 @@
       }
 
       .arrow-icon {
+        visibility: hidden;
+      }
+
+      /* Show the arrows when hovering over the favorite item */
+      .favorite-item:hover .arrow-icon {
+        visibility: visible;
         cursor: pointer;
         margin: 0 4px;
-        /* Add any additional styles here */
       }
 
       /* New class for the settings title similar to History */
