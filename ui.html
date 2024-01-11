@@ -664,13 +664,21 @@
               document.querySelectorAll(".settings-item")
             );
 
-            // The 'Show Page Names' setting is the second settings item (index 1)
-            const showPageNamesSetting = settingsItems[1];
+  // The 'Show Page Names' setting is the second settings item (index 1)
+  const showPageNamesSetting = document.getElementById("togglePageName");
 
-            // Related to Theme
-            const theme = event.data.pluginMessage.theme;
-            document.body.classList.toggle("light-mode", theme === "light");
-            document.getElementById("toggleTheme").checked = theme === "light";
+  // Update the checkbox state based on the message
+  showPageNamesSetting.checked = event.data.pluginMessage.showPageName;
+
+  // Related to Theme
+  const theme = event.data.pluginMessage.theme;
+  document.body.classList.toggle("light-mode", theme === "light");
+  document.getElementById("toggleTheme").checked = theme === "light";
+
+  // Display settings according to editor type
+  const pageNamesSettingItem = document.querySelectorAll(".settings-item")[1];
+  pageNamesSettingItem.style.display = event.data.pluginMessage.editorType === "figjam" ? "none" : "flex";
+  break;
 
             // Use event.data.pluginMessage.editorType to get the editor type
             if (event.data.pluginMessage.editorType === "figjam") {
