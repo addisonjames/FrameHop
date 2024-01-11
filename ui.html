@@ -297,6 +297,25 @@
         parent.postMessage({ pluginMessage: data }, "*");
       }
 
+      // Object to store SVG icons
+      const icons = {
+        frame: `
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0.409912 9.47563H12.4099M3.38232 12.6616L3.38232 0.661621M9.00781 12.8399L9.00781 0.839886M0.409912 3.86917H12.4099" stroke="black"/>
+      </svg>
+    `,
+        component: `
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9.50443 2.66092L6.89729 5.26807L4.25443 2.66092L6.89729 0.0180664L9.50443 2.66092ZM12.8616 6.01807L10.2544 8.66092L7.64729 6.01807L10.2544 3.41092L12.8616 6.01807ZM6.14729 6.01807L3.50443 8.66092L0.861572 6.01807L3.50443 3.41092L6.14729 6.01807ZM9.50443 9.41092L6.89729 12.0181L4.25443 9.41092L6.89729 6.76807L9.50443 9.41092Z" fill="black"/>
+      </svg>
+    `,
+        section: `
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0.610596 0.839844H7.09424V5.26802H0.610596V0.839844ZM0.610596 0.839844H12.6106V12.8398H0.610596V0.839844Z" stroke="black"/>
+      </svg>
+    `,
+      };
+
       function updateFrameList(historyData, currentFrameId) {
         // Get the list element and clear its current content
         const list = document.getElementById("frameList");
