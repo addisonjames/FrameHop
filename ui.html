@@ -110,7 +110,7 @@
       .favorite-item {
         display: flex;
         align-items: center;
-        justify-content: flex-start; /* Align items to the left */
+        justify-content: space-between;
         height: 32px;
         padding: 0 12px;
       }
@@ -131,6 +131,18 @@
       .star-icon {
         cursor: pointer;
         margin: 0 4 0 4px; /* Adjust the space between the star and the frame name */
+      }
+
+      .name-container {
+        display: flex;
+        align-items: center;
+        flex-grow: 1; /* Allows it to take up available space */
+      }
+
+      .arrow-container {
+        /* New container for arrows */
+        display: flex;
+        align-items: center;
       }
 
       .arrow-icon {
@@ -369,6 +381,10 @@
           const listItem = document.createElement("li");
           listItem.classList.add("favorite-item");
 
+          // Container for star and frame name
+          const nameContainer = document.createElement("div");
+          nameContainer.classList.add("name-container");
+
           const star = document.createElement("span");
           star.classList.add("favorite-star-icon");
           star.textContent = "★";
@@ -379,26 +395,35 @@
           };
           listItem.appendChild(star);
 
-                  // Create up arrow
-        const upArrow = document.createElement('span');
-        upArrow.innerHTML = '&#8593;'; // Unicode for up arrow
-        upArrow.classList.add('arrow-icon', 'up-arrow');
-        upArrow.onclick = () => moveFavorite(index, -1);
-        listItem.appendChild(upArrow);
-
-        // Create down arrow
-        const downArrow = document.createElement('span');
-        downArrow.innerHTML = '&#8595;'; // Unicode for down arrow
-        downArrow.classList.add('arrow-icon', 'down-arrow');
-        downArrow.onclick = () => moveFavorite(index, 1);
-        listItem.appendChild(downArrow);
-
           const frameName = document.createElement("span");
           frameName.textContent =
             updatedFrameName.length > truncateLength
               ? updatedFrameName.substring(0, truncateLength - 3) + "..."
               : updatedFrameName;
           listItem.appendChild(frameName);
+
+          listItem.appendChild(nameContainer);
+
+          // Create a container for arrows
+          const arrowContainer = document.createElement("div");
+          arrowContainer.classList.add("arrow-container");
+
+          // Create up arrow
+          const upArrow = document.createElement("span");
+          upArrow.innerHTML = "&#8593;"; // Unicode for up arrow
+          upArrow.classList.add("arrow-icon", "up-arrow");
+          upArrow.onclick = () => moveFavorite(index, -1);
+          arrowContainer.appendChild(upArrow);
+
+          // Create down arrow
+          const downArrow = document.createElement("span");
+          downArrow.innerHTML = "&#8595;"; // Unicode for down arrow
+          downArrow.classList.add("arrow-icon", "down-arrow");
+          downArrow.onclick = () => moveFavorite(index, 1);
+          arrowContainer.appendChild(downArrow);
+
+          // Append the arrow container to the listItem
+          listItem.appendChild(arrowContainer);
 
           listItem.onclick = (event) => {
             const starWidth = star.offsetWidth;
@@ -439,16 +464,22 @@
         );
       }
 
-  function moveFavorite(index, direction) {
-    if ((direction === -1 && index > 0) || (direction === 1 && index < favorites.length - 1)) {
-      const itemToMove = favorites[index];
-      const newIndex = index + direction;
-      favorites.splice(index, 1);
-      favorites.splice(newIndex, 0, itemToMove);
-      updateFavoriteList(favorites, currentFavoriteIndex);
-      parent.postMessage({ pluginMessage: { type: "updateFavoritesOrder", favorites } }, "*");
-    }
-  }
+      function moveFavorite(index, direction) {
+        if (
+          (direction === -1 && index > 0) ||
+          (direction === 1 && index < favorites.length - 1)
+        ) {
+          const itemToMove = favorites[index];
+          const newIndex = index + direction;
+          favorites.splice(index, 1);
+          favorites.splice(newIndex, 0, itemToMove);
+          updateFavoriteList(favorites, currentFavoriteIndex);
+          parent.postMessage(
+            { pluginMessage: { type: "updateFavoritesOrder", favorites } },
+            "*"
+          );
+        }
+      }
 
       function jumpToFrame(frameId, pageId) {
         parent.postMessage(
