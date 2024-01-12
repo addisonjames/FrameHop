@@ -115,6 +115,17 @@
         padding: 0 12px;
       }
 
+      /* Style for name container */
+      .name-container {
+        display: flex;
+        align-items: center;
+        flex-grow: 1; /* Allows it to take up available space */
+      }
+
+      .name-container span:first-child {
+        margin-right: 6px; /* Adjust the value as needed */
+      }
+
       .highlight-row-style {
         background-color: var(--highlight-active-frame-color);
       }
@@ -130,7 +141,7 @@
 
       .star-icon {
         cursor: pointer;
-        margin: 0 4 0 4px; /* Adjust the space between the star and the frame name */
+        margin: 0 0 0 4px; /* Adjust the space between the star and the frame name */
       }
 
       .name-container {
@@ -324,36 +335,31 @@
 
         // Loop through each frame in the history data
         historyData.forEach((frame) => {
-          // Create a list item for each frame
           const listItem = document.createElement("li");
           listItem.classList.add("history-item");
 
-          // Set an onclick event to jump to the frame when the list item is clicked
-          listItem.onclick = (event) => {
-            if (!event.target.classList.contains("star-icon")) {
-              jumpToFrame(frame.id, frame.pageId);
-            }
-          };
+          // Create a container for frame icon and name
+          const nameContainer = document.createElement("div");
+          nameContainer.classList.add("name-container");
+
+          // Add frame icon
+          const frameIcon = document.createElement("span");
+          frameIcon.innerHTML = icons.frame;
+          nameContainer.appendChild(frameIcon);
 
           // Create a span to hold the frame name
           const frameName = document.createElement("span");
-
-          // Set the Frame Name truncation length based on whether page names are shown
-          const truncateLength = showPageName ? 50 : 76; // Truncation length settings
-          // Truncate the frame name if necessary
+          const truncateLength = showPageName ? 50 : 76;
           const truncatedFrameName =
             frame.name.length > truncateLength
               ? frame.name.substring(0, truncateLength - 3) + "..."
               : frame.name;
           frameName.textContent = truncatedFrameName;
-          listItem.appendChild(frameName);
-
-          // Define the truncation length for page names
-          const pageNameTruncateLength = 22;
+          nameContainer.appendChild(frameName);
 
           // If showing page names, add the page name to the list item
           if (showPageName && frame.pageName) {
-            // Truncate the page name if necessary (in code; control above)
+            const pageNameTruncateLength = 22;
             const truncatedPageName =
               frame.pageName.length > pageNameTruncateLength
                 ? frame.pageName.substring(0, pageNameTruncateLength - 3) +
@@ -365,8 +371,7 @@
             frameName.appendChild(pageNameSpan);
           }
 
-          // Set an onclick event for the frame name span
-          frameName.onclick = () => jumpToFrame(frame.id, frame.pageId);
+          listItem.appendChild(nameContainer);
 
           // Create and append the star icon for the favorites feature
           const star = document.createElement("span");
@@ -377,9 +382,15 @@
           star.onclick = () => toggleFavorite(frame, historyData);
           listItem.appendChild(star);
 
+          // Set an onclick event to jump to the frame when the list item is clicked
+          listItem.onclick = (event) => {
+            if (!event.target.classList.contains("star-icon")) {
+              jumpToFrame(frame.id, frame.pageId);
+            }
+          };
+
           // Highlight the current frame if found
           if (frame.id === currentFrameId && !currentFrameFound) {
-            listItem.style.backgroundColor = "";
             listItem.classList.add("highlight-row-style");
             currentFrameFound = true;
           }
