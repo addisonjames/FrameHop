@@ -126,6 +126,7 @@ function updateUI() {
               node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
             pageId: page.id,
             pageName: showPageName ? page.name : "",
+            type: node.type, // Add the type of the node here
             isSection: item.isSection || false,
             // Only include pageName if not in FigJam
             pageName:
@@ -184,6 +185,7 @@ function updateHistory() {
   const currentSelection = figma.currentPage.selection;
   if (currentSelection.length > 0) {
     const selectedItem = currentSelection[0];
+    console.log("Selected item type:", selectedItem.type); // Log the type of the selected item
     const itemType = selectedItem.type;
     if (
       itemType === "FRAME" ||
@@ -295,7 +297,7 @@ function cycleHistoryLength() {
     historyLength: historyLength,
     // Include the currentFrameId and currentFavoriteIndex to maintain the selection
     currentFrameId: currentFrameId,
-    currentFavoriteIndex: currentFavoriteIndex
+    currentFavoriteIndex: currentFavoriteIndex,
   });
 }
 

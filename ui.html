@@ -342,9 +342,26 @@
           const nameContainer = document.createElement("div");
           nameContainer.classList.add("name-container");
 
-          // Add frame icon
+          // Determine which icon to use based on the type
+          let iconHTML;
+          switch (frame.type) {
+            case "FRAME":
+              iconHTML = icons.frame;
+              break;
+            case "SECTION":
+              iconHTML = icons.section;
+              break;
+            case "COMPONENT":
+            case "COMPONENT_SET": // Both COMPONENT and COMPONENT_SET use the same icon
+              iconHTML = icons.component;
+              break;
+            default:
+              iconHTML = icons.frame; // Default icon
+          }
+
+          // Add the appropriate icon
           const frameIcon = document.createElement("span");
-          frameIcon.innerHTML = icons.frame;
+          frameIcon.innerHTML = iconHTML;
           nameContainer.appendChild(frameIcon);
 
           // Create a span to hold the frame name
@@ -356,6 +373,8 @@
               : frame.name;
           frameName.textContent = truncatedFrameName;
           nameContainer.appendChild(frameName);
+
+          listItem.appendChild(nameContainer);
 
           // If showing page names, add the page name to the list item
           if (showPageName && frame.pageName) {
