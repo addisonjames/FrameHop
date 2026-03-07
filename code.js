@@ -31,7 +31,7 @@ function updatePluginData() {
   figma.root.setPluginData("frameHopData", JSON.stringify(data));
 }
 
-function loadPluginData() {
+async function loadPluginData() {
   const data = figma.root.getPluginData("frameHopData");
   console.log("loadPluginData - Loaded data:", data);
 
@@ -48,7 +48,7 @@ function loadPluginData() {
           ? parsedData.settings.showPageName
           : showPageName;
       historyLength = parsedData.settings.historyLength || historyLength;
-      currentTheme = parsedData.settings.theme || currentTheme; // Add this line
+      currentTheme = parsedData.settings.theme || currentTheme;
     }
   } else {
     history = [];
@@ -70,18 +70,18 @@ function loadPluginData() {
     }
   });
 
-  updateUI();
+  await updateUI();
   // Send the initial settings to the UI when the plugin is reloaded
   figma.ui.postMessage({
     type: "loadSettings",
     showPageName: showPageName,
     historyLength: historyLength,
     editorType: figma.editorType,
-    theme: currentTheme, // Added when trying to get Figjam theme to default to light but didn't work
+    theme: currentTheme,
   });
 }
 
-function updateUI() {
+async function updateUI() {
   // This variable will hold the ID of the currently selected frame, if any
   const currentSelectionId =
     figma.currentPage.selection.length > 0
@@ -93,48 +93,42 @@ function updateUI() {
     (fav) => fav.id === currentSelectionId
   );
 
-  favorites = favorites
-    .map((fav) => {
-      const node = figma.getNodeById(fav.id);
-      if (node) {
-        // Update the favorite with the latest name from the Figma document
-        return {
-          id: fav.id,
-          name: node.name,
-          isSection: fav.isSection,
-        };
-      } else {
-        // If the node is not found, return null to filter it out
-        return null;
-      }
-    })
-    .filter((fav) => fav !== null); // Filter out any favorites that might have been deleted
+  // Update favorites with async node lookups
+  const updatedFavorites = [];
+  for (const fav of favorites) {
+    const node = await figma.getNodeByIdAsync(fav.id);
+    if (node) {
+      updatedFavorites.push({
+        id: fav.id,
+        name: node.name,
+        isSection: fav.isSection,
+      });
+    }
+    // If the node is not found, skip it (filters out deleted favorites)
+  }
+  favorites = updatedFavorites;
 
   // Slice the history to respect the historyLength setting
   const limitedHistory = history.slice(-historyLength);
 
   // Reverse the history for display purposes
-  const recentHistory = limitedHistory
-    .reverse()
-    .map((item) => {
-      const node = figma.getNodeById(item.frameId);
-      const page = node ? figma.getNodeById(item.pageId) : null;
-      return node && page
-        ? {
-            id: node.id,
-            name:
-              node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
-            pageId: page.id,
-            pageName: showPageName ? page.name : "",
-            type: node.type, // Add the type of the node here
-            isSection: item.isSection || false,
-            // Only include pageName if not in FigJam
-            pageName:
-              figma.editorType === "figma" && showPageName ? page.name : "",
-          }
-        : null;
-    })
-    .filter((node) => node !== null);
+  const reversedHistory = limitedHistory.reverse();
+  const recentHistory = [];
+  for (const item of reversedHistory) {
+    const node = await figma.getNodeByIdAsync(item.frameId);
+    const page = node ? await figma.getNodeByIdAsync(item.pageId) : null;
+    if (node && page) {
+      recentHistory.push({
+        id: node.id,
+        name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
+        pageId: page.id,
+        type: node.type,
+        isSection: item.isSection || false,
+        pageName:
+          figma.editorType === "figma" && showPageName ? page.name : "",
+      });
+    }
+  }
 
   // Send the updated information to the UI
   figma.ui.postMessage({
@@ -142,18 +136,18 @@ function updateUI() {
     historyData: recentHistory,
     currentFrameId: currentSelectionId,
     currentPageId: figma.currentPage.id,
-    favorites: favorites, // Send the updated favorites array
+    favorites: favorites,
     currentFavoriteIndex: currentFavoriteIndex,
     showPageName: showPageName,
     historyLength: historyLength,
   });
 
   console.log("updateUI - Recent history for UI:", recentHistory);
-  console.log("updateUI - Updated favorites:", favorites); // Additional log for debugging
+  console.log("updateUI - Updated favorites:", favorites);
 }
 
-function jumpToFrame(frameId) {
-  const targetFrame = figma.getNodeById(frameId);
+async function jumpToFrame(frameId) {
+  const targetFrame = await figma.getNodeByIdAsync(frameId);
 
   if (targetFrame) {
     let targetPage = targetFrame.parent;
@@ -163,7 +157,7 @@ function jumpToFrame(frameId) {
     }
 
     if (targetPage) {
-      figma.currentPage = targetPage;
+      await figma.setCurrentPageAsync(targetPage);
       figma.currentPage.selection = [targetFrame];
       figma.viewport.scrollAndZoomIntoView([targetFrame]);
 
@@ -178,10 +172,10 @@ function jumpToFrame(frameId) {
   } else {
     console.log("Frame not found:", frameId);
   }
-  updateUI();
+  await updateUI();
 }
 
-function updateHistory() {
+async function updateHistory() {
   const currentSelection = figma.currentPage.selection;
   if (currentSelection.length > 0) {
     const selectedItem = currentSelection[0];
@@ -213,20 +207,20 @@ function updateHistory() {
         currentIndex = itemIndex;
       }
       updatePluginData();
-      updateUI();
+      await updateUI();
     }
   } else {
     // Reset currentIndex if nothing is selected
     currentIndex = history.length > 0 ? history.length - 1 : -1;
     updatePluginData();
-    updateUI();
+    await updateUI();
   }
 }
 
-figma.on("selectionchange", updateHistory);
+figma.on("selectionchange", () => { updateHistory(); });
 
 // Handle hopping forwards in history
-function hopForwards() {
+async function hopForwards() {
   console.log(
     "Before Hop Forwards: currentIndex =",
     currentIndex,
@@ -235,15 +229,15 @@ function hopForwards() {
   );
   if (currentIndex < history.length - 1) {
     currentIndex += 1;
-    jumpToFrame(history[currentIndex].frameId);
+    await jumpToFrame(history[currentIndex].frameId);
     updatePluginData();
-    updateUI(); // Call updateUI to ensure UI is updated with current settings
+    await updateUI();
     console.log("After Hop Forwards: currentIndex =", currentIndex);
   }
 }
 
 // Handle hopping backwards in history
-function hopBackwards() {
+async function hopBackwards() {
   console.log(
     "Before Hop Backwards: currentIndex =",
     currentIndex,
@@ -252,14 +246,14 @@ function hopBackwards() {
   );
   if (currentIndex > 0) {
     currentIndex -= 1;
-    jumpToFrame(history[currentIndex].frameId);
+    await jumpToFrame(history[currentIndex].frameId);
     updatePluginData();
-    updateUI(); // Call updateUI to ensure UI is updated with current settings
+    await updateUI();
     console.log("After Hop Backwards: currentIndex =", currentIndex);
   }
 }
 
-function cycleHistoryLength() {
+async function cycleHistoryLength() {
   const lengths = [4, 8, 16];
   let currentLengthIndex = lengths.indexOf(historyLength);
   historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
@@ -288,7 +282,7 @@ function cycleHistoryLength() {
   currentFavoriteIndex = Math.max(currentFavoriteIndex, -1);
 
   updatePluginData(); // Save the updated history length setting
-  updateUI(); // Reflect changes in the UI
+  await updateUI(); // Reflect changes in the UI
   console.log("Updated plugin data and UI after cycling history length"); // Debug log
 
   // Send a message to the UI to update the history length display
@@ -301,10 +295,10 @@ function cycleHistoryLength() {
   });
 }
 
-figma.ui.onmessage = (msg) => {
+figma.ui.onmessage = async (msg) => {
   switch (msg.type) {
     case "jumpToFrame":
-      jumpToFrame(msg.frameId);
+      await jumpToFrame(msg.frameId);
       break;
 
     case "clearData":
@@ -317,7 +311,7 @@ figma.ui.onmessage = (msg) => {
       figma.root.setPluginData("frameHopData", JSON.stringify({}));
       // Inform the UI to clear its state
       figma.ui.postMessage({ type: "dataCleared" });
-      updateUI();
+      await updateUI();
       break;
 
     case "updateFavorites":
@@ -329,7 +323,7 @@ figma.ui.onmessage = (msg) => {
         isSection: fav.isSection,
       }));
       updatePluginData();
-      updateUI();
+      await updateUI();
       break;
 
     case "updateFavoritesOrder":
@@ -344,11 +338,11 @@ figma.ui.onmessage = (msg) => {
         type: "showPageNameUpdated",
         showPageName: showPageName,
       });
-      updateUI();
+      await updateUI();
       break;
 
     case "cycleHistoryLength":
-      cycleHistoryLength(); // This function now should call updatePluginData internally
+      await cycleHistoryLength();
       break;
 
     case "resize":
@@ -370,26 +364,24 @@ figma.ui.onmessage = (msg) => {
   }
 };
 
-// Command handlindocument.getElementById("toggleTheme").addEventListenerg
+// Command handling
 if (figma.command === "openFrameHop") {
   figma.showUI(__html__, { width: 240, height: 360 });
   loadPluginData();
-  updateUI();
 } else if (
   figma.command === "hopBackwards" ||
   figma.command === "hopForwards"
 ) {
   figma.showUI(__html__, { width: 240, height: 360 });
-  loadPluginData();
-  if (figma.command === "hopBackwards") {
-    hopBackwards();
-  } else if (figma.command === "hopForwards") {
-    hopForwards();
-  }
+  loadPluginData().then(async () => {
+    if (figma.command === "hopBackwards") {
+      await hopBackwards();
+    } else if (figma.command === "hopForwards") {
+      await hopForwards();
+    }
+  });
 }
 
-figma.on("selectionchange", updateHistory);
 if (figma.currentPage.selection.length > 0) {
   updateHistory();
 }
-updateUI();
