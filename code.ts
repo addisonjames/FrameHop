@@ -5,6 +5,7 @@ let showPageName = true; // Control the display of the page name
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
 let currentTheme = "dark"; // Default theme
+let isNavigating = false; // Suppress updateHistory during programmatic navigation
 
 // Set relaunch data with a descriptive string for the relaunch button
 figma.root.setRelaunchData({ openFrameHop: "" });
@@ -37,7 +38,7 @@ async function loadPluginData() {
   if (data) {
     const parsedData = JSON.parse(data);
     history = parsedData.history || [];
-    currentIndex = parsedData.currentIndex || -1;
+    currentIndex = parsedData.currentIndex !== undefined ? parsedData.currentIndex : -1;
     favorites = parsedData.favorites || [];
 
     // Load and apply settings
@@ -154,9 +155,11 @@ async function jumpToFrame(frameId: string) {
     }
 
     if (targetPage) {
+      isNavigating = true;
       await figma.setCurrentPageAsync(targetPage as PageNode);
       figma.currentPage.selection = [targetFrame as SceneNode];
       figma.viewport.scrollAndZoomIntoView([targetFrame as SceneNode]);
+      isNavigating = false;
 
       // Update currentIndex and currentFavoriteIndex
       currentIndex = history.findIndex((item) => item.frameId === frameId);
@@ -214,7 +217,11 @@ async function updateHistory() {
   }
 }
 
-figma.on("selectionchange", () => { updateHistory(); });
+figma.on("selectionchange", () => {
+  if (!isNavigating) {
+    updateHistory();
+  }
+});
 
 // Handle hopping forwards in history
 async function hopForwards() {
