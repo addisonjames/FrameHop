@@ -2,6 +2,7 @@
   "name": "FrameHop",
   "id": "1319412441392289036",
   "api": "1.0.0",
+  "documentAccess": "dynamic-page",
   "main": "code.js",
   "capabilities": [],
   "enableProposedApi": false,
