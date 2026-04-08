@@ -5,6 +5,8 @@ let showPageName = true; // Control the display of the page name
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
 let currentTheme = "dark"; // Default theme
+let isNavigating = false; // Suppress updateHistory during programmatic navigation
+let isHopping = false; // Suppress updateHistory during hop command startup
 
 // Set relaunch data with a descriptive string for the relaunch button
 figma.root.setRelaunchData({ openFrameHop: "" });
@@ -37,7 +39,7 @@ async function loadPluginData() {
   if (data) {
     const parsedData = JSON.parse(data);
     history = parsedData.history || [];
-    currentIndex = parsedData.currentIndex || -1;
+    currentIndex = parsedData.currentIndex !== undefined ? parsedData.currentIndex : -1;
     favorites = parsedData.favorites || [];
 
     // Load and apply settings
@@ -154,9 +156,11 @@ async function jumpToFrame(frameId: string) {
     }
 
     if (targetPage) {
+      isNavigating = true;
       await figma.setCurrentPageAsync(targetPage as PageNode);
       figma.currentPage.selection = [targetFrame as SceneNode];
       figma.viewport.scrollAndZoomIntoView([targetFrame as SceneNode]);
+      isNavigating = false;
 
       // Update currentIndex and currentFavoriteIndex
       currentIndex = history.findIndex((item) => item.frameId === frameId);
@@ -190,7 +194,7 @@ async function updateHistory() {
       const item = { frameId: itemId, pageId: pageId, isSection: isSection };
 
       const itemIndex = history.findIndex(
-        (h) => h.frameId === itemId && h.pageId === pageId
+        (h) => h.frameId === itemId
       );
       if (itemIndex === -1) {
         // Add new item and slice the history if it exceeds historyLength
@@ -200,7 +204,8 @@ async function updateHistory() {
         }
         currentIndex = history.length - 1;
       } else {
-        // If the item is already in the history, update currentIndex without reordering
+        // Update pageId in case frame was moved, and update currentIndex
+        history[itemIndex].pageId = pageId;
         currentIndex = itemIndex;
       }
       updatePluginData();
@@ -214,17 +219,42 @@ async function updateHistory() {
   }
 }
 
-figma.on("selectionchange", () => { updateHistory(); });
+figma.on("selectionchange", () => {
+  if (!isNavigating && !isHopping) {
+    updateHistory();
+  }
+});
+
+// Always resolve currentIndex from the actual current selection
+function resolveCurrentIndex() {
+  if (figma.currentPage.selection.length > 0) {
+    const selectedId = figma.currentPage.selection[0].id;
+    const idx = history.findIndex((item) => item.frameId === selectedId);
+    if (idx >= 0) {
+      currentIndex = idx;
+    }
+  }
+}
 
 // Handle hopping forwards in history
 async function hopForwards() {
+  // Read currentIndex directly from storage — the in-memory value is unreliable
+  // because 0 || -1 === -1 (JS treats 0 as falsy) and async corruption
+  const fwdData = figma.root.getPluginData("frameHopData");
+  if (fwdData) {
+    const parsed = JSON.parse(fwdData);
+    if (parsed.currentIndex !== undefined) {
+      currentIndex = parsed.currentIndex;
+    }
+  }
+  resolveCurrentIndex();
   console.log(
     "Before Hop Forwards: currentIndex =",
     currentIndex,
     ", history =",
     history
   );
-  if (currentIndex < history.length - 1) {
+  if (currentIndex >= 0 && currentIndex < history.length - 1) {
     currentIndex += 1;
     await jumpToFrame(history[currentIndex].frameId);
     updatePluginData();
@@ -235,6 +265,15 @@ async function hopForwards() {
 
 // Handle hopping backwards in history
 async function hopBackwards() {
+  // Read currentIndex directly from storage — the in-memory value is unreliable
+  const bwdData = figma.root.getPluginData("frameHopData");
+  if (bwdData) {
+    const parsed = JSON.parse(bwdData);
+    if (parsed.currentIndex !== undefined) {
+      currentIndex = parsed.currentIndex;
+    }
+  }
+  resolveCurrentIndex();
   console.log(
     "Before Hop Backwards: currentIndex =",
     currentIndex,
@@ -295,6 +334,7 @@ figma.ui.onmessage = async (msg: any) => {
   switch (msg.type) {
     case "jumpToFrame":
       await jumpToFrame(msg.frameId);
+      updatePluginData();
       break;
 
     case "clearData":
@@ -356,20 +396,37 @@ figma.ui.onmessage = async (msg: any) => {
 if (figma.command === "openFrameHop") {
   figma.showUI(__html__, { width: 240, height: 360 });
   loadPluginData();
+  // Update history for the current selection when opening the plugin UI
+  if (figma.currentPage.selection.length > 0) {
+    updateHistory();
+  }
 } else if (
   figma.command === "hopBackwards" ||
   figma.command === "hopForwards"
 ) {
+  // Suppress updateHistory during hop initialization to prevent race conditions
+  // that corrupt currentIndex between loadPluginData and the hop operation
+  isHopping = true;
   figma.showUI(__html__, { width: 240, height: 360 });
   loadPluginData().then(async () => {
+    // Re-read currentIndex directly from saved plugin data right before hopping.
+    // The in-memory currentIndex gets corrupted to -1 during loadPluginData's async
+    // operations (multiple await points in updateUI). Re-reading from the persistent
+    // store bypasses whatever is resetting the in-memory variable.
+    const savedData = figma.root.getPluginData("frameHopData");
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      if (parsed.currentIndex !== undefined) {
+        currentIndex = parsed.currentIndex;
+        console.log("Restored currentIndex from saved data:", currentIndex);
+      }
+    }
+
     if (figma.command === "hopBackwards") {
       await hopBackwards();
     } else if (figma.command === "hopForwards") {
       await hopForwards();
     }
+    isHopping = false;
   });
-}
-
-if (figma.currentPage.selection.length > 0) {
-  updateHistory();
 }
