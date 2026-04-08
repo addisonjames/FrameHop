@@ -1,10 +1,11 @@
 let history: { frameId: string; pageId: string; isSection: boolean }[] = [];
 let currentIndex = -1;
-let favorites: { id: string; name: string; isSection?: boolean; pageId?: string; pageName?: string }[] = [];
+let favorites: { id: string; name: string; customName?: string; isSection?: boolean; pageId?: string; pageName?: string }[] = [];
 let showPageName = true; // Control the display of the page name
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
-let currentTheme = "dark"; // Default theme
+let currentTheme = "system"; // Default theme (follows OS appearance)
+let trackAllObjects = true; // When true, record any SceneNode; otherwise only frames/components/sections
 let isNavigating = false; // Suppress updateHistory during programmatic navigation
 let isHopping = false; // Suppress updateHistory during hop command startup
 
@@ -26,6 +27,7 @@ function updatePluginData() {
       showPageName: showPageName,
       historyLength: historyLength,
       theme: currentTheme,
+      trackAllObjects: trackAllObjects,
     },
   };
   console.log("Saving updated plugin data with history length:", historyLength);
@@ -50,6 +52,10 @@ async function loadPluginData() {
           : showPageName;
       historyLength = parsedData.settings.historyLength || historyLength;
       currentTheme = parsedData.settings.theme || currentTheme;
+      trackAllObjects =
+        parsedData.settings.trackAllObjects !== undefined
+          ? parsedData.settings.trackAllObjects
+          : true;
     }
   } else {
     history = [];
@@ -78,6 +84,7 @@ async function loadPluginData() {
     historyLength: historyLength,
     editorType: figma.editorType,
     theme: currentTheme,
+    trackAllObjects: trackAllObjects,
   });
 }
 
@@ -99,9 +106,9 @@ async function updateUI() {
     const node = await figma.getNodeByIdAsync(fav.id);
     if (node) {
       updatedFavorites.push({
+        ...fav,
         id: fav.id,
         name: node.name,
-        isSection: fav.isSection,
       });
     }
   }
@@ -176,20 +183,34 @@ async function jumpToFrame(frameId: string) {
   await updateUI();
 }
 
+const RESTRICTED_TRACK_TYPES = new Set([
+  "FRAME",
+  "COMPONENT",
+  "COMPONENT_SET",
+  "INSTANCE",
+  "SECTION",
+]);
+
+function getPageIdForNode(node: BaseNode): string | null {
+  let cur: BaseNode | null = node.parent;
+  while (cur && cur.type !== "PAGE") cur = cur.parent;
+  return cur ? cur.id : null;
+}
+
 async function updateHistory() {
   const currentSelection = figma.currentPage.selection;
   if (currentSelection.length > 0) {
     const selectedItem = currentSelection[0];
     console.log("Selected item type:", selectedItem.type);
     const itemType = selectedItem.type;
-    if (
-      itemType === "FRAME" ||
-      itemType === "COMPONENT" ||
-      itemType === "COMPONENT_SET" ||
-      itemType === "SECTION"
-    ) {
+    const typeAllowed = trackAllObjects || RESTRICTED_TRACK_TYPES.has(itemType);
+    if (typeAllowed) {
       const itemId = selectedItem.id;
-      const pageId = selectedItem.parent!.id;
+      const pageId = getPageIdForNode(selectedItem);
+      if (!pageId) {
+        await updateUI();
+        return;
+      }
       const isSection = itemType === "SECTION";
       const item = { frameId: itemId, pageId: pageId, isSection: isSection };
 
@@ -359,6 +380,7 @@ figma.ui.onmessage = async (msg: any) => {
       favorites = msg.favorites.map((fav: any) => ({
         id: fav.id,
         name: fav.name,
+        customName: fav.customName,
         pageId: fav.pageId,
         pageName: fav.pageName,
         isSection: fav.isSection,
@@ -366,6 +388,18 @@ figma.ui.onmessage = async (msg: any) => {
       updatePluginData();
       await updateUI();
       break;
+
+    case "renameFavorite": {
+      const fav = favorites.find((f) => f.id === msg.id);
+      if (fav) {
+        const trimmed = (msg.customName || "").trim();
+        if (trimmed) fav.customName = trimmed;
+        else delete fav.customName;
+        updatePluginData();
+        await updateUI();
+      }
+      break;
+    }
 
     case "updateFavoritesOrder":
       favorites = msg.favorites;
@@ -396,6 +430,12 @@ figma.ui.onmessage = async (msg: any) => {
       currentTheme = msg.theme;
       updatePluginData();
       figma.ui.postMessage({ type: "applyTheme", theme: currentTheme });
+      break;
+
+    case "toggleTrackAllObjects":
+      trackAllObjects = !!msg.value;
+      updatePluginData();
+      await updateUI();
       break;
   }
 };

@@ -133,6 +133,14 @@
         color: var(--text-color-secondary);
       }
 
+      .favorite-name.editing {
+        outline: 1px solid #18a0fb;
+        border-radius: 2px;
+        padding: 0 2px;
+        cursor: text;
+        white-space: nowrap;
+      }
+
       /* Style for star icon in favorite list */
       .favorite-star-icon {
         cursor: pointer;
@@ -293,10 +301,10 @@
     <!-- Settings -->
     <div class="settings-title">Settings</div>
 
-    <!-- Setting: Light/Dark Toggle -->
+    <!-- Setting: Appearance (cycles Light / Dark / System) -->
     <div class="settings-item">
-      Light Mode
-      <input type="checkbox" id="toggleTheme" class="styled-checkbox" />
+      Appearance
+      <span id="themeDisplay" class="history-length">System</span>
     </div>
 
     <!-- Setting: Toggle Page Names -->
@@ -305,6 +313,17 @@
       <input
         type="checkbox"
         id="togglePageName"
+        class="styled-checkbox"
+        checked
+      />
+    </div>
+
+    <!-- Setting: Track All Objects -->
+    <div class="settings-item">
+      Track All Objects
+      <input
+        type="checkbox"
+        id="toggleTrackAllObjects"
         class="styled-checkbox"
         checked
       />
@@ -324,7 +343,7 @@
       <span id="clearData">Clear Data</span>
     </div>
 
-    <div style="text-align:center;font-size:9px;color:#666;padding:2px 0;">v1.1.2.1</div>
+    <div style="text-align:center;font-size:9px;color:#666;padding:2px 0;">v1.1.3</div>
 
     <!-- Resize Handle -->
     <div class="resize-handle">
@@ -356,9 +375,71 @@
             <path d="M9.50443 2.66092L6.89729 5.26807L4.25443 2.66092L6.89729 0.0180664L9.50443 2.66092ZM12.8616 6.01807L10.2544 8.66092L7.64729 6.01807L10.2544 3.41092L12.8616 6.01807ZM6.14729 6.01807L3.50443 8.66092L0.861572 6.01807L3.50443 3.41092L6.14729 6.01807ZM9.50443 9.41092L6.89729 12.0181L4.25443 9.41092L6.89729 6.76807L9.50443 9.41092Z" fill="currentColor"/>
           </svg>
     `,
+        instance: `
+          <svg width="12" height="12" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M6.5 0.707107L12.2929 6.5L6.5 12.2929L0.707107 6.5L6.5 0.707107Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
+          </svg>
+    `,
         section: `
           <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
             <path d="M0.610596 0.839844H7.09424V5.26802H0.610596V0.839844ZM0.610596 0.839844H12.6106V12.8398H0.610596V0.839844Z" stroke="currentColor"/>
+          </svg>
+    `,
+        text: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M1.5 1.5H10.5V3M6 1.5V10.5M4 10.5H8" stroke="currentColor" stroke-linecap="square"/>
+          </svg>
+    `,
+        group: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <rect x="1" y="1" width="3" height="3" stroke="currentColor"/>
+            <rect x="8" y="1" width="3" height="3" stroke="currentColor"/>
+            <rect x="1" y="8" width="3" height="3" stroke="currentColor"/>
+            <rect x="8" y="8" width="3" height="3" stroke="currentColor"/>
+          </svg>
+    `,
+        shape: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <circle cx="6" cy="6" r="5" stroke="currentColor"/>
+          </svg>
+    `,
+        rectangle: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <rect x="1.5" y="2.5" width="9" height="7" stroke="currentColor" fill="none"/>
+          </svg>
+    `,
+        ellipse: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <circle cx="6" cy="6" r="4.5" stroke="currentColor" fill="none"/>
+          </svg>
+    `,
+        line: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <line x1="2" y1="10" x2="10" y2="2" stroke="currentColor" stroke-linecap="round"/>
+          </svg>
+    `,
+        polygon: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M6 1.5L10.76 10H1.24L6 1.5Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
+          </svg>
+    `,
+        star: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M6 1L7.18 4.38L10.76 4.45L7.90 6.62L8.94 10.05L6 8L3.06 10.05L4.10 6.62L1.24 4.45L4.82 4.38Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
+          </svg>
+    `,
+        vector: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M2 10L10 2" stroke="currentColor" stroke-linecap="round"/>
+            <rect x="0.5" y="8.5" width="3" height="3" stroke="currentColor" fill="none"/>
+            <rect x="8.5" y="0.5" width="3" height="3" stroke="currentColor" fill="none"/>
+          </svg>
+    `,
+        media: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <rect x="1" y="2" width="10" height="8" stroke="currentColor" fill="none"/>
+            <circle cx="4" cy="5" r="0.8" stroke="currentColor" fill="none"/>
+            <path d="M1.5 9L5 6L7 7.5L10.5 5V9.5H1.5V9Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
           </svg>
     `,
       };
@@ -388,11 +469,56 @@
               iconHTML = icons.section;
               break;
             case "COMPONENT":
-            case "COMPONENT_SET": // Both COMPONENT and COMPONENT_SET use the same icon
+            case "COMPONENT_SET":
               iconHTML = icons.component;
               break;
+            case "INSTANCE":
+              iconHTML = icons.instance;
+              break;
+            case "TEXT":
+              iconHTML = icons.text;
+              break;
+            case "GROUP":
+              iconHTML = icons.group;
+              break;
+            case "RECTANGLE":
+              iconHTML = icons.rectangle;
+              break;
+            case "ELLIPSE":
+              iconHTML = icons.ellipse;
+              break;
+            case "POLYGON":
+              iconHTML = icons.polygon;
+              break;
+            case "STAR":
+              iconHTML = icons.star;
+              break;
+            case "LINE":
+              iconHTML = icons.line;
+              break;
+            case "VECTOR":
+            case "BOOLEAN_OPERATION":
+              iconHTML = icons.vector;
+              break;
+            case "MEDIA":
+              iconHTML = icons.media;
+              break;
+            case "SLICE":
+            case "STICKY":
+            case "CONNECTOR":
+            case "SHAPE_WITH_TEXT":
+            case "STAMP":
+            case "TABLE":
+            case "HIGHLIGHT":
+            case "WASHI_TAPE":
+            case "CODE_BLOCK":
+            case "EMBED":
+            case "LINK_UNFURL":
+            case "WIDGET":
+              iconHTML = icons.shape;
+              break;
             default:
-              iconHTML = icons.frame; // Default icon
+              iconHTML = icons.shape; // Generic fallback for any unknown type
           }
 
           // Add the appropriate icon
@@ -486,11 +612,93 @@
           listItem.appendChild(star);
 
           const frameName = document.createElement("span");
+          frameName.classList.add("favorite-name");
+          const displayName = frame.customName || updatedFrameName;
           frameName.textContent =
-            updatedFrameName.length > truncateLength
-              ? updatedFrameName.substring(0, truncateLength - 3) + "..."
-              : updatedFrameName;
+            displayName.length > truncateLength
+              ? displayName.substring(0, truncateLength - 3) + "..."
+              : displayName;
+          frameName.title = displayName;
           listItem.appendChild(frameName);
+
+          let pendingJumpTimer = null;
+
+          // Intercept single-click on the name so the row's jump handler
+          // doesn't fire — instead, defer the jump so a dblclick can cancel it.
+          frameName.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (frameName.isContentEditable) return;
+            if (pendingJumpTimer) return;
+            pendingJumpTimer = setTimeout(() => {
+              pendingJumpTimer = null;
+              jumpToFrame(frame.id, frame.pageId);
+              currentFavoriteIndex = index;
+              updateFavoriteList(favorites, currentFavoriteIndex);
+            }, 250);
+          });
+          frameName.addEventListener("mousedown", (e) => {
+            // Prevent mousedown from reaching listItem (and from starting
+            // a text selection that interferes with dblclick).
+            e.stopPropagation();
+          });
+
+          frameName.ondblclick = (event) => {
+            event.stopPropagation();
+            if (pendingJumpTimer) {
+              clearTimeout(pendingJumpTimer);
+              pendingJumpTimer = null;
+            }
+            const original = frame.customName || updatedFrameName;
+            frameName.textContent = original;
+            frameName.contentEditable = "true";
+            frameName.classList.add("editing");
+            frameName.focus();
+            const range = document.createRange();
+            range.selectNodeContents(frameName);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+          };
+
+          let renameHandled = false;
+          const commitRename = () => {
+            if (renameHandled) return;
+            renameHandled = true;
+            const newName = frameName.textContent.trim();
+            frameName.contentEditable = "false";
+            frameName.classList.remove("editing");
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "renameFavorite",
+                  id: frame.id,
+                  customName: newName,
+                },
+              },
+              "*"
+            );
+          };
+          const cancelRename = () => {
+            if (renameHandled) return;
+            renameHandled = true;
+            frameName.contentEditable = "false";
+            frameName.classList.remove("editing");
+            updateFavoriteList(favorites, currentFavoriteIndex);
+          };
+
+          frameName.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commitRename();
+              frameName.blur();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              cancelRename();
+            }
+          });
+          frameName.addEventListener("blur", () => {
+            if (frameName.contentEditable === "true") commitRename();
+          });
 
           listItem.appendChild(nameContainer);
 
@@ -630,21 +838,76 @@
           );
         });
 
-      // Function to toggle light/dark mode
+      // Appearance cycle: light -> dark -> system -> light
+      let currentThemeIntent = "system";
+      const systemDarkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+      function resolveTheme(intent) {
+        if (intent === "system") {
+          return systemDarkQuery.matches ? "dark" : "light";
+        }
+        return intent;
+      }
+
+      function applyThemeToBody(intent) {
+        currentThemeIntent = intent;
+        const resolved = resolveTheme(intent);
+        document.body.classList.toggle("light-mode", resolved === "light");
+        const display = document.getElementById("themeDisplay");
+        if (display) {
+          display.textContent =
+            intent === "light"
+              ? "Light"
+              : intent === "dark"
+              ? "Dark"
+              : "System";
+        }
+      }
+
+      // Re-apply on OS appearance change when intent is "system"
+      systemDarkQuery.addEventListener("change", function () {
+        if (currentThemeIntent === "system") {
+          toggleTransition(true);
+          setTimeout(() => toggleTransition(false), 300);
+          applyThemeToBody("system");
+        }
+      });
+
       document
-        .getElementById("toggleTheme")
-        .addEventListener("change", function (event) {
+        .getElementById("themeDisplay")
+        .addEventListener("click", function () {
           toggleTransition(true); // Enable transition
 
           setTimeout(() => {
             toggleTransition(false); // Disable transition after some time
           }, 300); // Duration should match the CSS transition duration
 
-          const newTheme = event.target.checked ? "light" : "dark";
-          document.body.classList.toggle("light-mode", event.target.checked);
+          const nextIntent =
+            currentThemeIntent === "light"
+              ? "dark"
+              : currentThemeIntent === "dark"
+              ? "system"
+              : "light";
+
+          applyThemeToBody(nextIntent);
 
           parent.postMessage(
-            { pluginMessage: { type: "updateTheme", theme: newTheme } },
+            { pluginMessage: { type: "updateTheme", theme: nextIntent } },
+            "*"
+          );
+        });
+
+      // Function to handle the 'Track All Objects' toggle
+      document
+        .getElementById("toggleTrackAllObjects")
+        .addEventListener("change", function (event) {
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "toggleTrackAllObjects",
+                value: event.target.checked,
+              },
+            },
             "*"
           );
         });
@@ -769,12 +1032,8 @@
             break;
 
           case "applyTheme":
-            // Apply the theme received from the main code
-            if (event.data.pluginMessage.theme === "light") {
-              document.body.classList.add("light-mode");
-            } else {
-              document.body.classList.remove("light-mode");
-            }
+            // Apply the theme intent received from the main code
+            applyThemeToBody(event.data.pluginMessage.theme);
             break;
 
           case "loadSettings":
@@ -790,18 +1049,23 @@
             showPageNamesSetting.checked =
               event.data.pluginMessage.showPageName;
 
+            // Apply the persisted Track All Objects setting
+            document.getElementById("toggleTrackAllObjects").checked =
+              !!event.data.pluginMessage.trackAllObjects;
+
             // Related to Theme
-            const theme = event.data.pluginMessage.theme;
-            document.body.classList.toggle("light-mode", theme === "light");
-            document.getElementById("toggleTheme").checked = theme === "light";
+            applyThemeToBody(event.data.pluginMessage.theme || "dark");
 
             // Display settings according to editor type
-            const pageNamesSettingItem =
-              document.querySelectorAll(".settings-item")[1];
-            pageNamesSettingItem.style.display =
-              event.data.pluginMessage.editorType === "figjam"
-                ? "none"
-                : "flex";
+            const allSettingsItems =
+              document.querySelectorAll(".settings-item");
+            const appearanceSettingItem = allSettingsItems[0];
+            const pageNamesSettingItem = allSettingsItems[1];
+            const isFigJam =
+              event.data.pluginMessage.editorType === "figjam";
+            pageNamesSettingItem.style.display = isFigJam ? "none" : "flex";
+            // FigJam has no dark mode, so hide the Appearance control there
+            appearanceSettingItem.style.display = isFigJam ? "none" : "flex";
             break;
 
             // Use event.data.pluginMessage.editorType to get the editor type
