@@ -85,10 +85,17 @@ async function updateUI() {
     currentFavoriteIndex = favorites.findIndex((fav) => fav.id === currentSelectionId);
     // Update favorites with async node lookups
     const updatedFavorites = [];
+    const enrichedFavorites = [];
     for (const fav of favorites) {
         const node = await figma.getNodeByIdAsync(fav.id);
         if (node) {
-            updatedFavorites.push(Object.assign(Object.assign({}, fav), { id: fav.id, name: node.name }));
+            const updated = Object.assign(Object.assign({}, fav), { id: fav.id, name: node.name });
+            updatedFavorites.push(updated);
+            enrichedFavorites.push(Object.assign(Object.assign({}, updated), {
+                type: node.type,
+                isVariant: node.type === "COMPONENT" && !!node.parent && node.parent.type === "COMPONENT_SET",
+                isImage: "fills" in node && Array.isArray(node.fills) && node.fills.some(f => f && f.type === "IMAGE" && f.visible !== false),
+            }));
         }
     }
     favorites = updatedFavorites;
@@ -106,6 +113,8 @@ async function updateUI() {
                 name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
                 pageId: page.id,
                 type: node.type,
+                isVariant: node.type === "COMPONENT" && !!node.parent && node.parent.type === "COMPONENT_SET",
+                isImage: "fills" in node && Array.isArray(node.fills) && node.fills.some(f => f && f.type === "IMAGE" && f.visible !== false),
                 isSection: item.isSection || false,
                 pageName: figma.editorType === "figma" && showPageName ? page.name : "",
             });
@@ -117,7 +126,7 @@ async function updateUI() {
         historyData: recentHistory,
         currentFrameId: currentSelectionId,
         currentPageId: figma.currentPage.id,
-        favorites: favorites,
+        favorites: enrichedFavorites,
         currentFavoriteIndex: currentFavoriteIndex,
         showPageName: showPageName,
         historyLength: historyLength,

@@ -102,13 +102,29 @@ async function updateUI() {
 
   // Update favorites with async node lookups
   const updatedFavorites: typeof favorites = [];
+  const enrichedFavorites: any[] = [];
   for (const fav of favorites) {
     const node = await figma.getNodeByIdAsync(fav.id);
     if (node) {
-      updatedFavorites.push({
+      const updated = {
         ...fav,
         id: fav.id,
         name: node.name,
+      };
+      updatedFavorites.push(updated);
+      enrichedFavorites.push({
+        ...updated,
+        type: node.type,
+        isVariant:
+          node.type === "COMPONENT" &&
+          !!node.parent &&
+          node.parent.type === "COMPONENT_SET",
+        isImage:
+          "fills" in node &&
+          Array.isArray((node as any).fills) &&
+          (node as any).fills.some(
+            (f: Paint) => f && f.type === "IMAGE" && f.visible !== false
+          ),
       });
     }
   }
@@ -129,6 +145,16 @@ async function updateUI() {
         name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
         pageId: page.id,
         type: node.type,
+        isVariant:
+          node.type === "COMPONENT" &&
+          !!node.parent &&
+          node.parent.type === "COMPONENT_SET",
+        isImage:
+          "fills" in node &&
+          Array.isArray((node as any).fills) &&
+          (node as any).fills.some(
+            (f: Paint) => f && f.type === "IMAGE" && f.visible !== false
+          ),
         isSection: item.isSection || false,
         pageName:
           figma.editorType === "figma" && showPageName ? (page as PageNode).name : "",
@@ -142,7 +168,7 @@ async function updateUI() {
     historyData: recentHistory,
     currentFrameId: currentSelectionId,
     currentPageId: figma.currentPage.id,
-    favorites: favorites,
+    favorites: enrichedFavorites,
     currentFavoriteIndex: currentFavoriteIndex,
     showPageName: showPageName,
     historyLength: historyLength,

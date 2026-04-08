@@ -26,7 +26,7 @@
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-        font-size: 9pt;
+        font-size: 11px;
         margin: 0;
         padding: 0 0 8 0px;
         background-color: var(--background-color);
@@ -81,7 +81,7 @@
       }
 
       li {
-        margin-bottom: 4px; /* Increases line spacing. Was 8, now 4 */
+        margin-bottom: 0px;
         cursor: pointer;
       }
 
@@ -143,6 +143,9 @@
       .page-name-style {
         color: var(--text-color-secondary);
       }
+      .component-color svg {
+        color: #b384fb !important;
+      }
 
       .favorite-name.editing {
         outline: 1px solid #18a0fb;
@@ -187,7 +190,7 @@
         padding: 0 16px;
         color: var(--text-color-secondary);
         cursor: default;
-        margin-bottom: 4px; /* Spacing between settings options, same as history item spacing */
+        margin-bottom: 0px;
       }
 
       .settings-item input[type="checkbox"] {
@@ -195,13 +198,11 @@
         margin-right: 0px; /* Adjust this to control distance from right edge */
       }
 
-      /* Style for unchecked checkbox */
+      /* Style for checkbox — white in dark mode, black in light mode */
       .styled-checkbox {
-        accent-color: #3e8ae2; /* Set the border color of the checkbox when it's unchecked */
+        accent-color: var(--text-color);
         cursor: pointer;
-        background-color: var(
-          --background-color
-        ); /* Set the background to transparent when unchecked */
+        background-color: var(--background-color);
       }
 
       #clearData {
@@ -229,12 +230,12 @@
       .hop-test-bar {
         display: flex;
         gap: 8px;
-        padding: 8px 16px 0 16px;
+        padding: 8px 12px 8px 12px;
       }
 
       .hop-test-bar button {
         flex: 1;
-        height: 28px;
+        height: 32px;
         font-size: 9pt;
         font-family: inherit;
         color: var(--text-color);
@@ -278,8 +279,11 @@
       <button id="hopForwardBtn">Hop Forward</button>
     </div>
 
+    <!-- Divider -->
+    <hr class="hr" />
+
     <!-- Favorites -->
-    <div class="eyebrow eyebrow-top">Favorites</div>
+    <div class="eyebrow">Favorites</div>
     <ul id="favoriteList"></ul>
 
     <!-- Divider -->
@@ -337,7 +341,7 @@
       <span id="clearData">Clear Data</span>
     </div>
 
-    <div style="text-align:center;font-size:9px;color:#666;padding:2px 0;">v1.1.4</div>
+    <div style="text-align:left;font-size:9px;color:#666;padding:2px 16px;">v1.1.4</div>
 
     <!-- Resize Handle -->
     <div class="resize-handle">
@@ -372,6 +376,11 @@
         instance: `
           <svg width="12" height="12" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
             <path d="M6.5 0.707107L12.2929 6.5L6.5 12.2929L0.707107 6.5L6.5 0.707107Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
+          </svg>
+    `,
+        variant: `
+          <svg width="12" height="12" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M6.5 0.707107L12.2929 6.5L6.5 12.2929L0.707107 6.5L6.5 0.707107Z" fill="currentColor"/>
           </svg>
     `,
         section: `
@@ -431,12 +440,92 @@
     `,
         media: `
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
-            <rect x="1" y="2" width="10" height="8" stroke="currentColor" fill="none"/>
-            <circle cx="4" cy="5" r="0.8" stroke="currentColor" fill="none"/>
-            <path d="M1.5 9L5 6L7 7.5L10.5 5V9.5H1.5V9Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
+            <rect x="1" y="1.5" width="10" height="9" rx="1.5" stroke="currentColor"/>
+            <circle cx="8.25" cy="4.25" r="0.9" fill="currentColor"/>
+            <path d="M1.5 9L4.5 6L7 8L9 6.5L10.5 7.75V10H1.5V9Z" fill="currentColor"/>
           </svg>
     `,
       };
+
+      // Build the icon span for a frame/favorite based on its node type.
+      // Returns a <span> element with the SVG icon and the right color class.
+      function buildFrameIcon(frame) {
+        let iconHTML;
+        if (frame.isImage) {
+          iconHTML = icons.media;
+        } else
+        switch (frame.type) {
+          case "FRAME":
+            iconHTML = icons.frame;
+            break;
+          case "SECTION":
+            iconHTML = icons.section;
+            break;
+          case "COMPONENT":
+            iconHTML = frame.isVariant ? icons.variant : icons.component;
+            break;
+          case "COMPONENT_SET":
+            iconHTML = icons.component;
+            break;
+          case "INSTANCE":
+            iconHTML = icons.instance;
+            break;
+          case "TEXT":
+            iconHTML = icons.text;
+            break;
+          case "GROUP":
+            iconHTML = icons.group;
+            break;
+          case "RECTANGLE":
+            iconHTML = icons.rectangle;
+            break;
+          case "ELLIPSE":
+            iconHTML = icons.ellipse;
+            break;
+          case "POLYGON":
+            iconHTML = icons.polygon;
+            break;
+          case "STAR":
+            iconHTML = icons.star;
+            break;
+          case "LINE":
+            iconHTML = icons.line;
+            break;
+          case "VECTOR":
+          case "BOOLEAN_OPERATION":
+            iconHTML = icons.vector;
+            break;
+          case "MEDIA":
+            iconHTML = icons.media;
+            break;
+          case "SLICE":
+          case "STICKY":
+          case "CONNECTOR":
+          case "SHAPE_WITH_TEXT":
+          case "STAMP":
+          case "TABLE":
+          case "HIGHLIGHT":
+          case "WASHI_TAPE":
+          case "CODE_BLOCK":
+          case "EMBED":
+          case "LINK_UNFURL":
+          case "WIDGET":
+            iconHTML = icons.shape;
+            break;
+          default:
+            iconHTML = icons.shape;
+        }
+        const span = document.createElement("span");
+        span.innerHTML = iconHTML;
+        if (
+          frame.type === "COMPONENT" ||
+          frame.type === "COMPONENT_SET" ||
+          frame.type === "INSTANCE"
+        ) {
+          span.classList.add("component-color");
+        }
+        return span;
+      }
 
       function updateFrameList(historyData, currentFrameId) {
         // Get the list element and clear its current content
@@ -453,71 +542,8 @@
           const nameContainer = document.createElement("div");
           nameContainer.classList.add("name-container");
 
-          // Determine which icon to use based on the type
-          let iconHTML;
-          switch (frame.type) {
-            case "FRAME":
-              iconHTML = icons.frame;
-              break;
-            case "SECTION":
-              iconHTML = icons.section;
-              break;
-            case "COMPONENT":
-            case "COMPONENT_SET":
-              iconHTML = icons.component;
-              break;
-            case "INSTANCE":
-              iconHTML = icons.instance;
-              break;
-            case "TEXT":
-              iconHTML = icons.text;
-              break;
-            case "GROUP":
-              iconHTML = icons.group;
-              break;
-            case "RECTANGLE":
-              iconHTML = icons.rectangle;
-              break;
-            case "ELLIPSE":
-              iconHTML = icons.ellipse;
-              break;
-            case "POLYGON":
-              iconHTML = icons.polygon;
-              break;
-            case "STAR":
-              iconHTML = icons.star;
-              break;
-            case "LINE":
-              iconHTML = icons.line;
-              break;
-            case "VECTOR":
-            case "BOOLEAN_OPERATION":
-              iconHTML = icons.vector;
-              break;
-            case "MEDIA":
-              iconHTML = icons.media;
-              break;
-            case "SLICE":
-            case "STICKY":
-            case "CONNECTOR":
-            case "SHAPE_WITH_TEXT":
-            case "STAMP":
-            case "TABLE":
-            case "HIGHLIGHT":
-            case "WASHI_TAPE":
-            case "CODE_BLOCK":
-            case "EMBED":
-            case "LINK_UNFURL":
-            case "WIDGET":
-              iconHTML = icons.shape;
-              break;
-            default:
-              iconHTML = icons.shape; // Generic fallback for any unknown type
-          }
-
           // Add the appropriate icon
-          const frameIcon = document.createElement("span");
-          frameIcon.innerHTML = iconHTML;
+          const frameIcon = buildFrameIcon(frame);
           nameContainer.appendChild(frameIcon);
 
           // Create a span to hold the frame name
@@ -653,19 +679,13 @@
             });
           });
 
-          // Container for star and frame name
+          // Container for icon and frame name
           const nameContainer = document.createElement("div");
           nameContainer.classList.add("name-container");
 
-          const star = document.createElement("span");
-          star.classList.add("favorite-star-icon");
-          star.textContent = "★";
-          star.onclick = (event) => {
-            event.stopPropagation();
-            toggleFavorite(frame);
-            updateFavoriteList(favorites, currentFavoriteIndex);
-          };
-          listItem.appendChild(star);
+          const favIcon = buildFrameIcon(frame);
+          favIcon.classList.add("favorite-star-icon");
+          nameContainer.appendChild(favIcon);
 
           const frameName = document.createElement("span");
           frameName.classList.add("favorite-name");
@@ -675,7 +695,7 @@
               ? displayName.substring(0, truncateLength - 3) + "..."
               : displayName;
           frameName.title = displayName;
-          listItem.appendChild(frameName);
+          nameContainer.appendChild(frameName);
 
           let pendingJumpTimer = null;
 
@@ -762,14 +782,9 @@
           listItem.appendChild(nameContainer);
 
           listItem.onclick = (event) => {
-            const starWidth = star.offsetWidth;
-            const clickX =
-              event.clientX - listItem.getBoundingClientRect().left;
-            if (clickX > starWidth) {
-              jumpToFrame(frame.id, frame.pageId);
-              currentFavoriteIndex = index;
-              updateFavoriteList(favorites, currentFavoriteIndex);
-            }
+            jumpToFrame(frame.id, frame.pageId);
+            currentFavoriteIndex = index;
+            updateFavoriteList(favorites, currentFavoriteIndex);
           };
 
           if (currentFavoriteIndex === index) {
