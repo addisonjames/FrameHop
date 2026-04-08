@@ -65,7 +65,7 @@
         text-transform: none;
         font-weight: bold;
         margin-top: 0;
-        padding: 8px;
+        padding: 8px 16px;
         color: var(--eyebrow-color);
       }
 
@@ -112,7 +112,7 @@
         align-items: center;
         justify-content: space-between; /* Keep items on each end */
         height: 32px;
-        padding: 0 12px;
+        padding: 0 16px;
       }
 
       /* Style for favorite list items */
@@ -121,7 +121,7 @@
         align-items: center;
         justify-content: space-between;
         height: 32px;
-        padding: 0 12px;
+        padding: 0 16px;
         cursor: grab;
       }
       .favorite-item.dragging {
@@ -204,23 +204,35 @@
 
       .star-icon {
         cursor: pointer;
-        margin: 0 4 0 4px; /* Adjust the space between the star and the frame name */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        margin: 0 -2px;
       }
 
-      /* Hover-reveal stars on both lists. The star is the discoverable
-         affordance for click-to-favorite/unfavorite; drag is the shortcut. */
+      /* Hover-reveal action icons on both lists. Star on history (toggle
+         favorite), × on favorites (remove). Drag is the power-user shortcut. */
       .history-item .star-icon,
-      .favorite-item .favorite-remove-star {
+      .favorite-item .favorite-remove-icon {
         opacity: 0;
         transition: opacity 0.1s ease;
       }
       .history-item:hover .star-icon,
-      .favorite-item:hover .favorite-remove-star {
+      .favorite-item:hover .favorite-remove-icon {
         opacity: 1;
       }
-      .favorite-remove-star {
+      .favorite-remove-icon {
         cursor: pointer;
-        margin: 0 4px;
+        padding: 4px;
+        margin: 0 0 0 2px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-color-secondary);
+      }
+      .favorite-remove-icon:hover {
+        color: var(--text-color);
       }
 
       .name-container {
@@ -287,7 +299,8 @@
       .hop-test-bar {
         display: flex;
         gap: 8px;
-        padding: 12px 12px 8px 12px;
+        padding: 12px 16px 8px 16px;
+        position: relative;
       }
 
       .hop-test-bar button {
@@ -308,6 +321,53 @@
 
       .hop-test-bar button:hover {
         background-color: var(--button-bg-hover-color);
+      }
+
+      /* Square icon button (settings "...") matches hop button height */
+      .hop-test-bar button.icon-button {
+        flex: 0 0 32px;
+        width: 32px;
+        padding: 0;
+      }
+      .hop-test-bar button.icon-button svg {
+        display: block;
+      }
+
+      /* Settings popover anchored to the icon button */
+      .settings-popover {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 16px;
+        width: 200px;
+        background-color: var(--background-color);
+        border: 1px solid var(--hr-color);
+        border-radius: 6px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        padding: 4px 0;
+        z-index: 100;
+      }
+      .settings-popover[hidden] {
+        display: none;
+      }
+      .settings-popover .settings-item {
+        height: 28px;
+        margin-bottom: 0;
+        padding: 0 12px;
+        cursor: pointer;
+      }
+      .settings-popover .settings-item:hover {
+        background-color: var(--row-hover-color);
+      }
+      .settings-popover .settings-version {
+        text-align: left;
+        font-size: 9px;
+        color: #666;
+        padding: 4px 12px 2px 12px;
+      }
+      .settings-popover-divider {
+        height: 1px;
+        background-color: var(--hr-color);
+        margin: 4px 0;
       }
 
       /* Style for the scrollbar itself */
@@ -334,10 +394,52 @@
   </head>
 
   <body>
-    <!-- Debug hop test buttons (for verifying the hop-forward bug fix) -->
+    <!-- Hop test buttons + settings trigger -->
     <div class="hop-test-bar">
       <button id="hopBackBtn">Hop Back</button>
       <button id="hopForwardBtn">Hop Forward</button>
+      <button id="settingsBtn" class="icon-button" title="Settings" aria-label="Settings">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="3" cy="7" r="1.2" fill="currentColor"/>
+          <circle cx="7" cy="7" r="1.2" fill="currentColor"/>
+          <circle cx="11" cy="7" r="1.2" fill="currentColor"/>
+        </svg>
+      </button>
+
+      <!-- Settings popover (toggled by the "..." button) -->
+      <div id="settingsPopover" class="settings-popover" hidden>
+        <div id="settingsAppearance" class="settings-item">
+          <span>Appearance</span>
+          <span id="themeDisplay" class="history-length">System</span>
+        </div>
+        <label class="settings-item" for="togglePageName">
+          <span>Show Page Names</span>
+          <input
+            type="checkbox"
+            id="togglePageName"
+            class="styled-checkbox"
+            checked
+          />
+        </label>
+        <label class="settings-item" for="toggleTrackAllObjects">
+          <span>Track All Objects</span>
+          <input
+            type="checkbox"
+            id="toggleTrackAllObjects"
+            class="styled-checkbox"
+            checked
+          />
+        </label>
+        <div id="settingsHistoryLength" class="settings-item">
+          <span>History Length</span>
+          <span id="historyLengthDisplay" class="history-length">16</span>
+        </div>
+        <div id="settingsClearData" class="settings-item">
+          <span id="clearData">Clear Data</span>
+        </div>
+        <div class="settings-popover-divider"></div>
+        <div class="settings-version">v1.1.4</div>
+      </div>
     </div>
 
     <!-- Divider -->
@@ -353,56 +455,6 @@
     <!-- History -->
     <div class="eyebrow">History</div>
     <ul id="frameList"></ul>
-
-    <!-- Divider -->
-    <hr class="hr" />
-
-    <!-- Settings -->
-    <div class="settings-title">Settings</div>
-
-    <!-- Setting: Appearance (cycles Light / Dark / System) -->
-    <div class="settings-item">
-      Appearance
-      <span id="themeDisplay" class="history-length">System</span>
-    </div>
-
-    <!-- Setting: Toggle Page Names -->
-    <div class="settings-item">
-      Show Page Names
-      <input
-        type="checkbox"
-        id="togglePageName"
-        class="styled-checkbox"
-        checked
-      />
-    </div>
-
-    <!-- Setting: Track All Objects -->
-    <div class="settings-item">
-      Track All Objects
-      <input
-        type="checkbox"
-        id="toggleTrackAllObjects"
-        class="styled-checkbox"
-        checked
-      />
-    </div>
-
-    <!-- Setting: History Length -->
-    <div class="settings-item">
-      History Length
-      <span id="historyLengthDisplay" class="history-length">
-        <!-- Initial default value -->
-        16
-      </span>
-    </div>
-
-    <!-- Setting: Clear Data -->
-    <div class="settings-item">
-      <span id="clearData">Clear Data</span>
-    </div>
-
-    <div style="text-align:left;font-size:9px;color:#666;padding:2px 16px;">v1.1.4</div>
 
     <!-- Resize Handle -->
     <div class="resize-handle">
@@ -866,21 +918,26 @@
 
           listItem.appendChild(nameContainer);
 
-          // Hover-reveal star on the right: click to remove from favorites.
-          // Mirrors the discoverable affordance the history list uses.
-          const removeStar = document.createElement("span");
-          removeStar.classList.add("favorite-remove-star");
-          removeStar.textContent = "★";
-          removeStar.title = "Remove from favorites";
-          removeStar.addEventListener("mousedown", (e) => e.stopPropagation());
-          removeStar.addEventListener("click", (e) => {
+          // Hover-reveal × on the right: click to remove from favorites.
+          // Self-explanatory remove affordance (the row is already a favorite,
+          // so a star wouldn't communicate the action — × does).
+          const removeIcon = document.createElement("span");
+          removeIcon.classList.add("favorite-remove-icon");
+          removeIcon.innerHTML = `
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          `;
+          removeIcon.title = "Remove from favorites";
+          removeIcon.addEventListener("mousedown", (e) => e.stopPropagation());
+          removeIcon.addEventListener("click", (e) => {
             e.stopPropagation();
             toggleFavorite(frame);
           });
-          listItem.appendChild(removeStar);
+          listItem.appendChild(removeIcon);
 
           listItem.onclick = (event) => {
-            if (event.target.classList.contains("favorite-remove-star")) return;
+            if (event.target.closest(".favorite-remove-icon")) return;
             jumpToFrame(frame.id, frame.pageId);
             currentFavoriteIndex = index;
             updateFavoriteList(favorites, currentFavoriteIndex);
@@ -944,8 +1001,8 @@
         );
       };
 
-      // Function to handle the 'Clear Data' button click
-      document.getElementById("clearData").onclick = function () {
+      // Function to handle the 'Clear Data' row click (whole row is clickable)
+      document.getElementById("settingsClearData").onclick = function () {
         // Reset local history, currentIndex, and favorites
         history = [];
         currentIndex = -1;
@@ -959,9 +1016,9 @@
         parent.postMessage({ pluginMessage: { type: "clearData" } }, "*");
       };
 
-      // Event listener for cycling history length
+      // Event listener for cycling history length (whole row is clickable)
       document
-        .getElementById("historyLengthDisplay")
+        .getElementById("settingsHistoryLength")
         .addEventListener("click", function () {
           parent.postMessage(
             { pluginMessage: { type: "cycleHistoryLength" } },
@@ -1005,7 +1062,7 @@
       });
 
       document
-        .getElementById("themeDisplay")
+        .getElementById("settingsAppearance")
         .addEventListener("click", function () {
           toggleTransition(true); // Enable transition
 
@@ -1061,6 +1118,34 @@
           // Call updateFrameList to update the UI with the new state
           updateFrameList(history, currentIndex);
         });
+
+      // Settings popover: toggle on "..." click, close on outside click or Esc.
+      (function wireSettingsPopover() {
+        const btn = document.getElementById("settingsBtn");
+        const popover = document.getElementById("settingsPopover");
+        if (!btn || !popover) return;
+
+        const isOpen = () => !popover.hasAttribute("hidden");
+        const open = () => popover.removeAttribute("hidden");
+        const close = () => popover.setAttribute("hidden", "");
+
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (isOpen()) close();
+          else open();
+        });
+
+        // Don't let clicks inside the popover bubble to the outside-click closer
+        popover.addEventListener("click", (e) => e.stopPropagation());
+
+        document.addEventListener("click", () => {
+          if (isOpen()) close();
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && isOpen()) close();
+        });
+      })();
 
       // Drop handler: dragging a history row onto the favorites list adds it
       // as a favorite (no-op if it's already favorited). Equivalent to clicking
@@ -1126,7 +1211,7 @@
         });
 
         function handleMouseMove(event) {
-          const minWidth = 240; // Set a minimum width
+          const minWidth = 252; // Set a minimum width
           const minHeight = 80; // Set a minimum height
 
           let newWidth = window.innerWidth + event.movementX;

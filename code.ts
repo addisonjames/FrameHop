@@ -468,7 +468,7 @@ figma.ui.onmessage = async (msg: any) => {
 
 // Command handling
 if (figma.command === "openFrameHop") {
-  figma.showUI(__html__, { width: 240, height: 360 });
+  figma.showUI(__html__, { width: 252, height: 360 });
   loadPluginData();
   // Update history for the current selection when opening the plugin UI
   if (figma.currentPage.selection.length > 0) {
@@ -481,7 +481,7 @@ if (figma.command === "openFrameHop") {
   // Suppress updateHistory during hop initialization to prevent race conditions
   // that corrupt currentIndex between loadPluginData and the hop operation
   isHopping = true;
-  figma.showUI(__html__, { width: 240, height: 360 });
+  figma.showUI(__html__, { width: 252, height: 360 });
   loadPluginData().then(async () => {
     // Re-read currentIndex directly from saved plugin data right before hopping.
     // The in-memory currentIndex gets corrupted to -1 during loadPluginData's async
