@@ -337,6 +337,14 @@ figma.ui.onmessage = async (msg: any) => {
       updatePluginData();
       break;
 
+    case "hopBackwards":
+      await hopBackwards();
+      break;
+
+    case "hopForwards":
+      await hopForwards();
+      break;
+
     case "clearData":
       history = [];
       currentIndex = -1;
