@@ -69,6 +69,32 @@
         color: var(--eyebrow-color);
       }
 
+      .eyebrow-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .eyebrow-action {
+        background: none;
+        border: none;
+        padding: 4px;
+        margin: -4px 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-color-secondary);
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .eyebrow-action:hover {
+        color: var(--text-color);
+        background-color: var(--row-hover-color);
+      }
+      .eyebrow-action svg {
+        display: block;
+      }
+
       .eyebrow-top {
         padding-top: 16px; /* Add 8px padding to the top */
       }
@@ -446,7 +472,14 @@
     <hr class="hr" />
 
     <!-- Favorites -->
-    <div class="eyebrow">Favorites</div>
+    <div class="eyebrow eyebrow-row">
+      <span>Favorites</span>
+      <button id="saveViewportBtn" class="eyebrow-action" title="Favorite viewport" aria-label="Favorite viewport">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
     <ul id="favoriteList"></ul>
 
     <!-- Divider -->
@@ -553,6 +586,14 @@
             <rect x="8.5" y="0.5" width="3" height="3" stroke="currentColor" fill="none"/>
           </svg>
     `,
+        viewport: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M1 4V1H4" stroke="currentColor" stroke-linecap="square"/>
+            <path d="M8 1H11V4" stroke="currentColor" stroke-linecap="square"/>
+            <path d="M11 8V11H8" stroke="currentColor" stroke-linecap="square"/>
+            <path d="M4 11H1V8" stroke="currentColor" stroke-linecap="square"/>
+          </svg>
+    `,
         media: `
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
             <rect x="1" y="1.5" width="10" height="9" rx="1.5" stroke="currentColor"/>
@@ -566,7 +607,9 @@
       // Returns a <span> element with the SVG icon and the right color class.
       function buildFrameIcon(frame) {
         let iconHTML;
-        if (frame.isImage) {
+        if (frame.isViewport || frame.type === "VIEWPORT") {
+          iconHTML = icons.viewport;
+        } else if (frame.isImage) {
           iconHTML = icons.media;
         } else
         switch (frame.type) {
@@ -754,9 +797,13 @@
 
           listItem.addEventListener("dragstart", (e) => {
             dragSourceIndex = index;
-            favoriteDragFrame = frame;
+            // Viewport favorites can only be reordered within favorites — they
+            // must not arm the history drop-target (no outline, no removal).
+            if (!frame.isViewport) {
+              favoriteDragFrame = frame;
+              document.body.classList.add("favorite-dragging");
+            }
             listItem.classList.add("dragging");
-            document.body.classList.add("favorite-dragging");
             if (e.dataTransfer) {
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData("text/plain", String(index));
@@ -986,6 +1033,14 @@
           body.classList.remove("enable-transition");
         }
       }
+
+      // Save the current Figma viewport (zoom + pan) as a favorite.
+      document.getElementById("saveViewportBtn").onclick = function () {
+        parent.postMessage(
+          { pluginMessage: { type: "saveViewport" } },
+          "*"
+        );
+      };
 
       // Debug hop test buttons — send the same messages the menu commands would
       document.getElementById("hopBackBtn").onclick = function () {

@@ -1,6 +1,17 @@
+/// <reference path="./node_modules/@figma/plugin-typings/index.d.ts" />
+
 let history: { frameId: string; pageId: string; isSection: boolean }[] = [];
 let currentIndex = -1;
-let favorites: { id: string; name: string; customName?: string; isSection?: boolean; pageId?: string; pageName?: string }[] = [];
+let favorites: {
+  id: string;
+  name: string;
+  customName?: string;
+  isSection?: boolean;
+  pageId?: string;
+  pageName?: string;
+  isViewport?: boolean;
+  viewportState?: { x: number; y: number; zoom: number };
+}[] = [];
 let showPageName = true; // Control the display of the page name
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
@@ -104,6 +115,11 @@ async function updateUI() {
   const updatedFavorites: typeof favorites = [];
   const enrichedFavorites: any[] = [];
   for (const fav of favorites) {
+    if (fav.isViewport) {
+      updatedFavorites.push(fav);
+      enrichedFavorites.push({ ...fav, type: "VIEWPORT" });
+      continue;
+    }
     const node = await figma.getNodeByIdAsync(fav.id);
     if (node) {
       const updated = {
@@ -179,6 +195,35 @@ async function updateUI() {
 }
 
 async function jumpToFrame(frameId: string) {
+  // Viewport favorite: restore saved camera state instead of selecting a node.
+  const vpFav = favorites.find((f) => f.id === frameId && f.isViewport);
+  if (vpFav && vpFav.viewportState && vpFav.pageId) {
+    const page = await figma.getNodeByIdAsync(vpFav.pageId);
+    if (page && page.type === "PAGE") {
+      isNavigating = true;
+      await figma.setCurrentPageAsync(page as PageNode);
+      figma.currentPage.selection = [];
+      // Zoom must be set before center per the Figma plugin API.
+      figma.viewport.zoom = vpFav.viewportState.zoom;
+      figma.viewport.center = {
+        x: vpFav.viewportState.x,
+        y: vpFav.viewportState.y,
+      };
+      isNavigating = false;
+      currentFavoriteIndex = favorites.findIndex((f) => f.id === frameId);
+      console.log(
+        "Restored viewport favorite:",
+        frameId,
+        "on page:",
+        page.name
+      );
+    } else {
+      console.log("Page not found for viewport favorite:", frameId);
+    }
+    await updateUI();
+    return;
+  }
+
   const targetFrame = await figma.getNodeByIdAsync(frameId);
 
   if (targetFrame) {
@@ -410,10 +455,30 @@ figma.ui.onmessage = async (msg: any) => {
         pageId: fav.pageId,
         pageName: fav.pageName,
         isSection: fav.isSection,
+        isViewport: fav.isViewport,
+        viewportState: fav.viewportState,
       }));
       updatePluginData();
       await updateUI();
       break;
+
+    case "saveViewport": {
+      const vp = figma.viewport;
+      const count = favorites.filter((f) => f.isViewport).length + 1;
+      favorites.push({
+        id: `viewport-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 7)}`,
+        name: `Viewport ${count}`,
+        isViewport: true,
+        pageId: figma.currentPage.id,
+        pageName: figma.currentPage.name,
+        viewportState: { x: vp.center.x, y: vp.center.y, zoom: vp.zoom },
+      });
+      updatePluginData();
+      await updateUI();
+      break;
+    }
 
     case "renameFavorite": {
       const fav = favorites.find((f) => f.id === msg.id);
