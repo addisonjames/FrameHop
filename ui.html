@@ -10,6 +10,9 @@
         --eyebrow-color: #ffffff;
         --hr-color: #444444;
         --highlight-active-frame-color: #4d5875;
+        --row-hover-color: #383838;
+        --button-bg-color: #383838;
+        --button-bg-hover-color: #444444;
         --scrollbar-color: #3d3d3d;
         --scrollbar-highlight-color: #545454;
         /* Light theme colors */
@@ -19,6 +22,9 @@
         --eyebrow-color-light: #1a1a1a;
         --hr-color-light: #e6e6e6;
         --highlight-active-frame-color-light: #e5f4ff;
+        --row-hover-color-light: #f0f0f0;
+        --button-bg-color-light: #f5f5f5;
+        --button-bg-hover-color-light: #e6e6e6;
         --scrollbar-color-light: #d9d9d9;
         --scrollbar-highlight-color-light: #bdbdbd;
       }
@@ -43,6 +49,9 @@
         --highlight-active-frame-color: var(
           --highlight-active-frame-color-light
         );
+        --row-hover-color: var(--row-hover-color-light);
+        --button-bg-color: var(--button-bg-color-light);
+        --button-bg-hover-color: var(--button-bg-hover-color-light);
         --scrollbar-color: var(--scrollbar-color-light);
         --scrollbar-highlight-color: var(--scrollbar-highlight-color-light);
       }
@@ -125,6 +134,33 @@
       .favorite-item.drop-below {
         box-shadow: inset 0 -2px 0 0 #18a0fb;
       }
+      /* Drop target hint when dragging between history and favorites.
+         A pseudo-element draws the dashed border inset from the edges so it
+         doesn't sit flush against the panel walls (and doesn't shift content). */
+      body.history-dragging #favoriteList,
+      body.favorite-dragging #frameList {
+        position: relative;
+        min-height: 28px;
+      }
+      body.history-dragging #favoriteList::before,
+      body.favorite-dragging #frameList::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 4px;
+        right: 4px;
+        border: 1px dashed var(--text-color-secondary);
+        border-radius: 4px;
+        pointer-events: none;
+      }
+      .history-item[draggable="true"] {
+        cursor: grab;
+      }
+      .history-item.dragging {
+        opacity: 0.4;
+        cursor: grabbing;
+      }
 
       /* Style for name container */
       .name-container {
@@ -139,6 +175,11 @@
 
       .highlight-row-style {
         background-color: var(--highlight-active-frame-color);
+      }
+      /* Figma-style row hover. Active highlight wins via :not(). */
+      .history-item:hover:not(.highlight-row-style),
+      .favorite-item:hover:not(.highlight-row-style) {
+        background-color: var(--row-hover-color);
       }
       .page-name-style {
         color: var(--text-color-secondary);
@@ -164,6 +205,22 @@
       .star-icon {
         cursor: pointer;
         margin: 0 4 0 4px; /* Adjust the space between the star and the frame name */
+      }
+
+      /* Hover-reveal stars on both lists. The star is the discoverable
+         affordance for click-to-favorite/unfavorite; drag is the shortcut. */
+      .history-item .star-icon,
+      .favorite-item .favorite-remove-star {
+        opacity: 0;
+        transition: opacity 0.1s ease;
+      }
+      .history-item:hover .star-icon,
+      .favorite-item:hover .favorite-remove-star {
+        opacity: 1;
+      }
+      .favorite-remove-star {
+        cursor: pointer;
+        margin: 0 4px;
       }
 
       .name-container {
@@ -230,23 +287,27 @@
       .hop-test-bar {
         display: flex;
         gap: 8px;
-        padding: 8px 12px 8px 12px;
+        padding: 12px 12px 8px 12px;
       }
 
       .hop-test-bar button {
         flex: 1;
         height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
         font-size: 9pt;
         font-family: inherit;
         color: var(--text-color);
-        background-color: var(--highlight-active-frame-color);
+        background-color: var(--button-bg-color);
         border: 1px solid var(--hr-color);
         border-radius: 4px;
         cursor: pointer;
       }
 
       .hop-test-bar button:hover {
-        background-color: var(--scrollbar-highlight-color);
+        background-color: var(--button-bg-hover-color);
       }
 
       /* Style for the scrollbar itself */
@@ -355,6 +416,8 @@
       let currentIndex = -1;
       let favorites = [];
       let showPageName = true; // Initialize the variable to store the toggle state
+      let historyDragFrame = null; // Frame currently being dragged from history → favorites
+      let favoriteDragFrame = null; // Frame currently being dragged from favorites → history (to remove)
 
       function updatePluginData() {
         const data = { history, currentIndex, favorites };
@@ -538,6 +601,24 @@
           const listItem = document.createElement("li");
           listItem.classList.add("history-item");
 
+          // Allow dragging this row onto the favorites list as a quick
+          // shortcut for adding it to favorites (does not remove from history).
+          listItem.draggable = true;
+          listItem.addEventListener("dragstart", (e) => {
+            historyDragFrame = frame;
+            listItem.classList.add("dragging");
+            document.body.classList.add("history-dragging");
+            if (e.dataTransfer) {
+              e.dataTransfer.effectAllowed = "copy";
+              e.dataTransfer.setData("text/plain", frame.id);
+            }
+          });
+          listItem.addEventListener("dragend", () => {
+            historyDragFrame = null;
+            listItem.classList.remove("dragging");
+            document.body.classList.remove("history-dragging");
+          });
+
           // Create a container for frame icon and name
           const nameContainer = document.createElement("div");
           nameContainer.classList.add("name-container");
@@ -621,7 +702,9 @@
 
           listItem.addEventListener("dragstart", (e) => {
             dragSourceIndex = index;
+            favoriteDragFrame = frame;
             listItem.classList.add("dragging");
+            document.body.classList.add("favorite-dragging");
             if (e.dataTransfer) {
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData("text/plain", String(index));
@@ -672,6 +755,8 @@
           });
           listItem.addEventListener("dragend", () => {
             dragSourceIndex = null;
+            favoriteDragFrame = null;
+            document.body.classList.remove("favorite-dragging");
             listItem.classList.remove("dragging", "drop-above", "drop-below");
             // Defensive: clear stray drop classes from any sibling
             list.querySelectorAll(".drop-above, .drop-below").forEach((el) => {
@@ -781,7 +866,21 @@
 
           listItem.appendChild(nameContainer);
 
+          // Hover-reveal star on the right: click to remove from favorites.
+          // Mirrors the discoverable affordance the history list uses.
+          const removeStar = document.createElement("span");
+          removeStar.classList.add("favorite-remove-star");
+          removeStar.textContent = "★";
+          removeStar.title = "Remove from favorites";
+          removeStar.addEventListener("mousedown", (e) => e.stopPropagation());
+          removeStar.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleFavorite(frame);
+          });
+          listItem.appendChild(removeStar);
+
           listItem.onclick = (event) => {
+            if (event.target.classList.contains("favorite-remove-star")) return;
             jumpToFrame(frame.id, frame.pageId);
             currentFavoriteIndex = index;
             updateFavoriteList(favorites, currentFavoriteIndex);
@@ -962,6 +1061,54 @@
           // Call updateFrameList to update the UI with the new state
           updateFrameList(history, currentIndex);
         });
+
+      // Drop handler: dragging a history row onto the favorites list adds it
+      // as a favorite (no-op if it's already favorited). Equivalent to clicking
+      // the row's star — it doesn't move the item out of history.
+      (function wireFavoritesDropTarget() {
+        const favList = document.getElementById("favoriteList");
+        favList.addEventListener("dragover", (e) => {
+          if (!historyDragFrame) return;
+          e.preventDefault();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+        });
+        favList.addEventListener("drop", (e) => {
+          if (!historyDragFrame) return;
+          e.preventDefault();
+          const dropped = historyDragFrame;
+          historyDragFrame = null;
+          document.body.classList.remove("history-dragging");
+          const alreadyFavorite = favorites.some((f) => f.id === dropped.id);
+          if (!alreadyFavorite) {
+            toggleFavorite(dropped);
+          }
+        });
+      })();
+
+      // Drop handler: dragging a favorite row onto the history list removes it
+      // from favorites. Equivalent to clicking the row's star to un-favorite.
+      // Reordering within the favorites list still works because that path
+      // never reaches #frameList.
+      (function wireHistoryDropTarget() {
+        const histList = document.getElementById("frameList");
+        histList.addEventListener("dragover", (e) => {
+          if (!favoriteDragFrame) return;
+          e.preventDefault();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        });
+        histList.addEventListener("drop", (e) => {
+          if (!favoriteDragFrame) return;
+          e.preventDefault();
+          const dropped = favoriteDragFrame;
+          favoriteDragFrame = null;
+          document.body.classList.remove("favorite-dragging");
+          // toggleFavorite removes the item if it's already a favorite — which
+          // it always is here, since the drag started from the favorites list.
+          if (favorites.some((f) => f.id === dropped.id)) {
+            toggleFavorite(dropped);
+          }
+        });
+      })();
 
       // The window.onmessage listener handles messages sent from the plugin's main code.
       // It updates the plugin's UI in response to changes in the plugin's state or user interactions.
