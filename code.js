@@ -183,7 +183,6 @@ async function jumpToFrame(frameId) {
                 x: vpFav.viewportState.x,
                 y: vpFav.viewportState.y,
             };
-            isNavigating = false;
             currentFavoriteIndex = favorites.findIndex((f) => f.id === frameId);
             // A viewport jump is a side excursion off the history timeline — it
             // shouldn't consume a history step. Bump currentIndex so the next
@@ -192,6 +191,14 @@ async function jumpToFrame(frameId) {
             if (currentIndex >= 0 && currentIndex < history.length) {
                 currentIndex += 1;
             }
+            // Defer clearing isNavigating: the `selection = []` above queues a
+            // selectionchange event that fires after this function returns. If we
+            // reset isNavigating synchronously, the event slips through and
+            // updateHistory's empty-selection branch resets currentIndex back to
+            // history.length - 1, undoing the bump above.
+            setTimeout(() => {
+                isNavigating = false;
+            }, 50);
             console.log("Restored viewport favorite:", frameId, "on page:", page.name);
         }
         else {
