@@ -99,6 +99,7 @@ async function loadPluginData() {
         theme: currentTheme,
         trackAllObjects: trackAllObjects,
         autoResize: autoResize,
+        hasMultiplePages: figma.root.children.length > 1,
     });
 }
 async function updateUI() {
@@ -106,8 +107,20 @@ async function updateUI() {
     const currentSelectionId = figma.currentPage.selection.length > 0
         ? figma.currentPage.selection[0].id
         : null;
-    // Update currentFavoriteIndex based on the current selection
-    currentFavoriteIndex = favorites.findIndex((fav) => fav.id === currentSelectionId);
+    // Page-name display only makes sense when there's more than one page to
+    // disambiguate against. Suppress everywhere when single-page (settings
+    // toggle, history items, viewport favorites).
+    const hasMultiplePages = figma.root.children.length > 1;
+    // Update currentFavoriteIndex based on the current selection — but if the
+    // user just clicked a viewport favorite, the canvas selection is empty by
+    // design, so the recompute would clear the highlight. Keep the viewport
+    // highlighted until something else (a new selection or another favorite
+    // click) actually replaces it.
+    const previousFav = favorites[currentFavoriteIndex];
+    const keepViewportHighlight = !!previousFav && !!previousFav.isViewport && !currentSelectionId;
+    if (!keepViewportHighlight) {
+        currentFavoriteIndex = favorites.findIndex((fav) => fav.id === currentSelectionId);
+    }
     // Update favorites with async node lookups
     const updatedFavorites = [];
     const enrichedFavorites = [];
@@ -119,7 +132,14 @@ async function updateUI() {
         }
         const node = await figma.getNodeByIdAsync(fav.id);
         if (node) {
-            const updated = Object.assign(Object.assign({}, fav), { id: fav.id, name: node.name });
+            // Refresh pageName/pageId from the live page so renames or moves
+            // between pages are reflected immediately, instead of showing stale
+            // values from when the favorite was first added.
+            let pageNode = node.parent;
+            while (pageNode && pageNode.type !== "PAGE") {
+                pageNode = pageNode.parent;
+            }
+            const updated = Object.assign(Object.assign({}, fav), { id: fav.id, name: node.name, pageId: pageNode ? pageNode.id : fav.pageId, pageName: pageNode ? pageNode.name : fav.pageName });
             updatedFavorites.push(updated);
             enrichedFavorites.push(Object.assign(Object.assign({}, updated), { type: node.type, isVariant: node.type === "COMPONENT" &&
                     !!node.parent &&
@@ -150,7 +170,9 @@ async function updateUI() {
                     Array.isArray(node.fills) &&
                     node.fills.some((f) => f && f.type === "IMAGE" && f.visible !== false),
                 isSection: item.isSection || false,
-                pageName: figma.editorType === "figma" && showPageName ? page.name : "",
+                pageName: figma.editorType === "figma" && showPageName && hasMultiplePages
+                    ? page.name
+                    : "",
             });
         }
     }
@@ -164,6 +186,7 @@ async function updateUI() {
         currentFavoriteIndex: currentFavoriteIndex,
         showPageName: showPageName,
         historyLength: historyLength,
+        hasMultiplePages: hasMultiplePages,
     });
     console.log("updateUI - Recent history for UI:", recentHistory);
     console.log("updateUI - Updated favorites:", favorites);

@@ -538,6 +538,8 @@
       let currentIndex = -1;
       let favorites = [];
       let showPageName = true; // Initialize the variable to store the toggle state
+      let hasMultiplePages = false; // True when figma.root has more than one page; gates page-name UI
+      let isFigJamEditor = false; // Tracked from loadSettings so update handler can re-evaluate FigJam-specific visibility
       let historyDragFrame = null; // Frame currently being dragged from history → favorites
       let favoriteDragFrame = null; // Frame currently being dragged from favorites → history (to remove)
 
@@ -916,6 +918,25 @@
               ? displayName.substring(0, truncateLength - 3) + "..."
               : displayName;
           frameName.title = displayName;
+          // In multi-page files, append the page name in the same muted
+          // style history items use — applies to both viewport favorites
+          // and frame favorites so users can tell items across pages apart.
+          if (
+            showPageName &&
+            hasMultiplePages &&
+            frame.pageName
+          ) {
+            const pageNameTruncateLength = 22;
+            const truncatedPageName =
+              frame.pageName.length > pageNameTruncateLength
+                ? frame.pageName.substring(0, pageNameTruncateLength - 3) +
+                  "..."
+                : frame.pageName;
+            const pageNameSpan = document.createElement("span");
+            pageNameSpan.textContent = ` (${truncatedPageName})`;
+            pageNameSpan.className = "page-name-style";
+            frameName.appendChild(pageNameSpan);
+          }
           nameContainer.appendChild(frameName);
 
           let pendingJumpTimer = null;
@@ -1435,6 +1456,7 @@
           showPageName: newShowPageName,
           historyLength: newHistoryLength,
           currentFavoriteIndex,
+          hasMultiplePages: newHasMultiplePages,
         } = event.data.pluginMessage;
 
         switch (type) {
@@ -1456,6 +1478,18 @@
             );
             // Update favorites with the data received
             favorites = updatedFavorites;
+            // Track multi-page state and refresh the toggle's visibility, in
+            // case pages were added or removed since the last update.
+            if (newHasMultiplePages !== undefined) {
+              hasMultiplePages = !!newHasMultiplePages;
+              const updateAllSettingsItems =
+                document.querySelectorAll(".settings-item");
+              const updatePageNamesItem = updateAllSettingsItems[1];
+              if (updatePageNamesItem) {
+                updatePageNamesItem.style.display =
+                  isFigJamEditor || !hasMultiplePages ? "none" : "flex";
+              }
+            }
             // Update the list of frames in the UI
             updateFrameList(historyData, currentFrameId);
             // Update the list of favorites in the UI
@@ -1524,16 +1558,24 @@
             // Related to Theme
             applyThemeToBody(event.data.pluginMessage.theme || "dark");
 
-            // Display settings according to editor type
+            // Track multi-page state from initial load
+            hasMultiplePages = !!event.data.pluginMessage.hasMultiplePages;
+
+            // Display settings according to editor type and page count
             const allSettingsItems =
               document.querySelectorAll(".settings-item");
             const appearanceSettingItem = allSettingsItems[0];
             const pageNamesSettingItem = allSettingsItems[1];
-            const isFigJam =
+            isFigJamEditor =
               event.data.pluginMessage.editorType === "figjam";
-            pageNamesSettingItem.style.display = isFigJam ? "none" : "flex";
+            // Hide Show Page Names in FigJam OR when there's only one page
+            // (no point in showing the toggle when there's nothing to label).
+            pageNamesSettingItem.style.display =
+              isFigJamEditor || !hasMultiplePages ? "none" : "flex";
             // FigJam has no dark mode, so hide the Appearance control there
-            appearanceSettingItem.style.display = isFigJam ? "none" : "flex";
+            appearanceSettingItem.style.display = isFigJamEditor
+              ? "none"
+              : "flex";
             break;
 
             // Use event.data.pluginMessage.editorType to get the editor type
