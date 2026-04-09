@@ -456,6 +456,15 @@
             checked
           />
         </label>
+        <label class="settings-item" for="toggleAutoResize">
+          <span>Auto Resize</span>
+          <input
+            type="checkbox"
+            id="toggleAutoResize"
+            class="styled-checkbox"
+            checked
+          />
+        </label>
         <div id="settingsHistoryLength" class="settings-item">
           <span>History Length</span>
           <span id="historyLengthDisplay" class="history-length">16</span>
@@ -464,7 +473,7 @@
           <span id="clearData">Clear Data</span>
         </div>
         <div class="settings-popover-divider"></div>
-        <div class="settings-version">v1.1.4</div>
+        <div class="settings-version">v1.1.5</div>
       </div>
     </div>
 
@@ -474,7 +483,7 @@
     <!-- Favorites -->
     <div class="eyebrow eyebrow-row">
       <span>Favorites</span>
-      <button id="saveViewportBtn" class="eyebrow-action" title="Favorite viewport" aria-label="Favorite viewport">
+      <button id="saveViewportBtn" class="eyebrow-action" title="Add viewport" aria-label="Add viewport">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
@@ -1200,6 +1209,12 @@
         document.addEventListener("keydown", (e) => {
           if (e.key === "Escape" && isOpen()) close();
         });
+
+        // Close when the user clicks anything on the Figma canvas — the
+        // plugin iframe loses focus, so we get a window blur.
+        window.addEventListener("blur", () => {
+          if (isOpen()) close();
+        });
       })();
 
       // Drop handler: dragging a history row onto the favorites list adds it
@@ -1279,7 +1294,7 @@
           parent.postMessage(
             {
               pluginMessage: {
-                type: "resize",
+                type: "manualResize",
                 width: newWidth,
                 height: newHeight,
               },
@@ -1287,6 +1302,98 @@
             "*"
           );
         }
+
+        // Auto-resize: observe content height and ask the plugin to resize
+        // the window to fit, clamped on the plugin side.
+        let autoResizeEnabled = true;
+        let lastPostedAutoHeight = 0;
+        let autoResizeRafPending = false;
+
+        function measureContentHeight() {
+          // Walk the body's in-flow children and find the lowest bottom edge,
+          // skipping the resize handle (position: fixed) and any other
+          // out-of-flow elements. This is independent of the iframe viewport
+          // size, so we can shrink the window below its current height —
+          // unlike documentElement.scrollHeight or body.offsetHeight, which
+          // can be clamped/influenced by the viewport.
+          let maxBottom = 0;
+          const children = document.body.children;
+          for (let i = 0; i < children.length; i++) {
+            const el = children[i];
+            if (el.classList && el.classList.contains("resize-handle"))
+              continue;
+            const style = window.getComputedStyle(el);
+            if (style.position === "fixed" || style.position === "absolute")
+              continue;
+            if (style.display === "none") continue;
+            const rect = el.getBoundingClientRect();
+            const bottom = el.offsetTop + rect.height;
+            if (bottom > maxBottom) maxBottom = bottom;
+          }
+          // Add a small bottom breathing room.
+          return Math.ceil(maxBottom + 8);
+        }
+
+        function postAutoResize(force) {
+          if (!autoResizeEnabled && !force) return;
+          const h = measureContentHeight();
+          if (!h) return;
+          if (!force && Math.abs(h - lastPostedAutoHeight) < 2) return;
+          lastPostedAutoHeight = h;
+          parent.postMessage(
+            {
+              pluginMessage: { type: "autoResize", height: h },
+            },
+            "*"
+          );
+        }
+
+        const autoResizeObserver = new ResizeObserver(() => {
+          if (!autoResizeEnabled) return;
+          if (autoResizeRafPending) return;
+          autoResizeRafPending = true;
+          requestAnimationFrame(() => {
+            autoResizeRafPending = false;
+            postAutoResize(false);
+          });
+        });
+        autoResizeObserver.observe(document.body);
+
+        // Snap to fit on the next frame so the DOM has fully laid out before
+        // we measure. Without the rAF, the measurement can sample a stale
+        // layout and report a height equal to the current window.
+        function snapToContentSoon() {
+          requestAnimationFrame(() => {
+            lastPostedAutoHeight = 0;
+            postAutoResize(true);
+          });
+        }
+
+        // Expose for the settings toggle + loadSettings handlers below.
+        window.__setAutoResizeEnabled = (enabled) => {
+          autoResizeEnabled = enabled;
+          const cb = document.getElementById("toggleAutoResize");
+          if (cb) cb.checked = enabled;
+          if (enabled) snapToContentSoon();
+        };
+
+        // Wire the Auto Resize checkbox.
+        document
+          .getElementById("toggleAutoResize")
+          .addEventListener("change", function (event) {
+            const enabled = event.target.checked;
+            autoResizeEnabled = enabled;
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "toggleAutoResize",
+                  value: enabled,
+                },
+              },
+              "*"
+            );
+            if (enabled) snapToContentSoon();
+          });
       };
 
       let currentFavoriteIndex; // Declare this variable outside the window.onmessage handler
@@ -1372,6 +1479,20 @@
             document.getElementById("toggleTrackAllObjects").checked =
               !!event.data.pluginMessage.trackAllObjects;
 
+            // Apply the persisted Auto Resize setting (default to true if missing)
+            {
+              const autoResizeFromSettings =
+                event.data.pluginMessage.autoResize !== undefined
+                  ? !!event.data.pluginMessage.autoResize
+                  : true;
+              if (typeof window.__setAutoResizeEnabled === "function") {
+                window.__setAutoResizeEnabled(autoResizeFromSettings);
+              } else {
+                document.getElementById("toggleAutoResize").checked =
+                  autoResizeFromSettings;
+              }
+            }
+
             // Related to Theme
             applyThemeToBody(event.data.pluginMessage.theme || "dark");
 
@@ -1401,6 +1522,16 @@
           case "showPageNameUpdated":
             // This message should be sent from code.js after the showPageName state is updated
             document.getElementById("togglePageName").checked = newShowPageName;
+            break;
+
+          case "autoResizeChanged":
+            // Plugin notifies us that auto-resize was flipped (e.g. user dragged the handle).
+            if (typeof window.__setAutoResizeEnabled === "function") {
+              window.__setAutoResizeEnabled(!!event.data.pluginMessage.value);
+            } else {
+              const cb = document.getElementById("toggleAutoResize");
+              if (cb) cb.checked = !!event.data.pluginMessage.value;
+            }
             break;
 
           default:

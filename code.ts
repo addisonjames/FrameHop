@@ -17,6 +17,19 @@ let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
 let currentTheme = "system"; // Default theme (follows OS appearance)
 let trackAllObjects = true; // When true, record any SceneNode; otherwise only frames/components/sections
+let autoResize = true; // When true, the plugin window auto-fits its content height
+let currentWindowWidth = 252; // Tracked so auto-resize can adjust height without changing width
+let currentWindowHeight = 360; // Tracked so we can persist the latest applied size
+// Floor at 316px so the settings popover is fully visible even when the
+// favorites and history lists are empty.
+const AUTO_RESIZE_MIN_HEIGHT = 316;
+// Max height scales with the history-length setting so the cap is generous
+// for 16 items but tight for 8. ~25px per history slot on top of the base UI.
+const AUTO_RESIZE_BASE_HEIGHT = 200;
+const AUTO_RESIZE_PER_ITEM = 25;
+function computeAutoResizeMaxHeight() {
+  return AUTO_RESIZE_BASE_HEIGHT + historyLength * AUTO_RESIZE_PER_ITEM;
+}
 let isNavigating = false; // Suppress updateHistory during programmatic navigation
 let isHopping = false; // Suppress updateHistory during hop command startup
 
@@ -39,6 +52,7 @@ function updatePluginData() {
       historyLength: historyLength,
       theme: currentTheme,
       trackAllObjects: trackAllObjects,
+      autoResize: autoResize,
     },
   };
   console.log("Saving updated plugin data with history length:", historyLength);
@@ -62,10 +76,16 @@ async function loadPluginData() {
           ? parsedData.settings.showPageName
           : showPageName;
       historyLength = parsedData.settings.historyLength || historyLength;
+      // Migrate old "4" history length to 8 (4 was removed as an option).
+      if (historyLength === 4) historyLength = 8;
       currentTheme = parsedData.settings.theme || currentTheme;
       trackAllObjects =
         parsedData.settings.trackAllObjects !== undefined
           ? parsedData.settings.trackAllObjects
+          : true;
+      autoResize =
+        parsedData.settings.autoResize !== undefined
+          ? parsedData.settings.autoResize
           : true;
     }
   } else {
@@ -83,6 +103,8 @@ async function loadPluginData() {
   // Restore window size
   figma.clientStorage.getAsync("frameHopWindowSize").then((size: any) => {
     if (size) {
+      currentWindowWidth = size.width;
+      currentWindowHeight = size.height;
       figma.ui.resize(size.width, size.height);
     }
   });
@@ -96,6 +118,7 @@ async function loadPluginData() {
     editorType: figma.editorType,
     theme: currentTheme,
     trackAllObjects: trackAllObjects,
+    autoResize: autoResize,
   });
 }
 
@@ -211,6 +234,13 @@ async function jumpToFrame(frameId: string) {
       };
       isNavigating = false;
       currentFavoriteIndex = favorites.findIndex((f) => f.id === frameId);
+      // A viewport jump is a side excursion off the history timeline — it
+      // shouldn't consume a history step. Bump currentIndex so the next
+      // hopBackwards returns to the user's last history position instead of
+      // skipping past it.
+      if (currentIndex >= 0 && currentIndex < history.length) {
+        currentIndex += 1;
+      }
       console.log(
         "Restored viewport favorite:",
         frameId,
@@ -382,7 +412,7 @@ async function hopBackwards() {
 }
 
 async function cycleHistoryLength() {
-  const lengths = [4, 8, 16];
+  const lengths = [8, 16];
   let currentLengthIndex = lengths.indexOf(historyLength);
   historyLength = lengths[(currentLengthIndex + 1) % lengths.length];
   console.log("Cycled history length to:", historyLength);
@@ -511,10 +541,39 @@ figma.ui.onmessage = async (msg: any) => {
       await cycleHistoryLength();
       break;
 
-    case "resize":
+    case "manualResize": {
       const { width, height } = msg;
+      currentWindowWidth = width;
+      currentWindowHeight = height;
       figma.ui.resize(width, height);
       figma.clientStorage.setAsync("frameHopWindowSize", { width, height });
+      // A manual drag means the user wants control — turn auto-resize off.
+      if (autoResize) {
+        autoResize = false;
+        updatePluginData();
+        figma.ui.postMessage({ type: "autoResizeChanged", value: false });
+      }
+      break;
+    }
+
+    case "autoResize": {
+      if (!autoResize) break;
+      const clamped = Math.max(
+        AUTO_RESIZE_MIN_HEIGHT,
+        Math.min(computeAutoResizeMaxHeight(), msg.height)
+      );
+      currentWindowHeight = clamped;
+      figma.ui.resize(currentWindowWidth, clamped);
+      figma.clientStorage.setAsync("frameHopWindowSize", {
+        width: currentWindowWidth,
+        height: clamped,
+      });
+      break;
+    }
+
+    case "toggleAutoResize":
+      autoResize = !!msg.value;
+      updatePluginData();
       break;
 
     case "updateTheme":
