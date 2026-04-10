@@ -242,6 +242,10 @@
         color: #b384fb !important;
       }
 
+      .favorite-item .name-container {
+        align-self: stretch;
+        cursor: grab;
+      }
       .favorite-name.editing {
         outline: 1px solid #18a0fb;
         border-radius: 2px;
@@ -501,7 +505,7 @@
           <span id="clearData">Clear Data</span>
         </div>
         <div class="settings-popover-divider"></div>
-        <div class="settings-version">v1.1.6</div>
+        <div class="settings-version">v1.1.7</div>
       </div>
     </div>
 
@@ -941,9 +945,10 @@
 
           let pendingJumpTimer = null;
 
-          // Intercept single-click on the name so the row's jump handler
-          // doesn't fire — instead, defer the jump so a dblclick can cancel it.
-          frameName.addEventListener("click", (e) => {
+          // Intercept single-click on the name container so the row's jump
+          // handler doesn't fire — defer the jump so a dblclick can cancel it.
+          // Using nameContainer (not frameName) so the full row height is clickable.
+          nameContainer.addEventListener("click", (e) => {
             e.stopPropagation();
             if (frameName.isContentEditable) return;
             if (pendingJumpTimer) return;
@@ -954,13 +959,13 @@
               updateFavoriteList(favorites, currentFavoriteIndex);
             }, 250);
           });
-          frameName.addEventListener("mousedown", (e) => {
+          nameContainer.addEventListener("mousedown", (e) => {
             // Prevent mousedown from reaching listItem (and from starting
             // a text selection that interferes with dblclick).
-            e.stopPropagation();
+            if (!frameName.isContentEditable) e.stopPropagation();
           });
 
-          frameName.ondblclick = (event) => {
+          nameContainer.ondblclick = (event) => {
             event.stopPropagation();
             if (pendingJumpTimer) {
               clearTimeout(pendingJumpTimer);
