@@ -1,6 +1,6 @@
 {
   "name": "FrameHop",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Hop between Frames and Components faster than ever",
   "main": "code.js",
   "scripts": {

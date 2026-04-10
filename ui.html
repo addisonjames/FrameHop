@@ -501,7 +501,7 @@
           <span id="clearData">Clear Data</span>
         </div>
         <div class="settings-popover-divider"></div>
-        <div class="settings-version">v1.1.5</div>
+        <div class="settings-version">v1.1.6</div>
       </div>
     </div>
 
@@ -1478,6 +1478,10 @@
             );
             // Update favorites with the data received
             favorites = updatedFavorites;
+            // Sync showPageName so the lists render with the correct setting
+            if (newShowPageName !== undefined) {
+              showPageName = newShowPageName;
+            }
             // Track multi-page state and refresh the toggle's visibility, in
             // case pages were added or removed since the last update.
             if (newHasMultiplePages !== undefined) {
@@ -1536,6 +1540,7 @@
             // Update the checkbox state based on the message
             showPageNamesSetting.checked =
               event.data.pluginMessage.showPageName;
+            showPageName = event.data.pluginMessage.showPageName;
 
             // Apply the persisted Track All Objects setting
             document.getElementById("toggleTrackAllObjects").checked =
