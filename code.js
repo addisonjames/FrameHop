@@ -141,7 +141,7 @@ async function updateUI() {
             }
             const updated = Object.assign(Object.assign({}, fav), { id: fav.id, name: node.name, pageId: pageNode ? pageNode.id : fav.pageId, pageName: pageNode ? pageNode.name : fav.pageName });
             updatedFavorites.push(updated);
-            enrichedFavorites.push(Object.assign(Object.assign({}, updated), { type: node.type, isVariant: node.type === "COMPONENT" &&
+            enrichedFavorites.push(Object.assign(Object.assign({}, updated), { type: node.type, shapeType: node.type === "SHAPE_WITH_TEXT" ? node.shapeType : undefined, isVariant: node.type === "COMPONENT" &&
                     !!node.parent &&
                     node.parent.type === "COMPONENT_SET", isImage: "fills" in node &&
                     Array.isArray(node.fills) &&
@@ -163,6 +163,7 @@ async function updateUI() {
                 name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
                 pageId: page.id,
                 type: node.type,
+                shapeType: node.type === "SHAPE_WITH_TEXT" ? node.shapeType : undefined,
                 isVariant: node.type === "COMPONENT" &&
                     !!node.parent &&
                     node.parent.type === "COMPONENT_SET",

@@ -644,6 +644,54 @@
             <path d="M1.5 9L4.5 6L7 8L9 6.5L10.5 7.75V10H1.5V9Z" fill="currentColor"/>
           </svg>
     `,
+        table: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <rect x="1.5" y="1.5" width="9" height="9" stroke="currentColor" fill="none"/>
+            <line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor"/>
+            <line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor"/>
+          </svg>
+    `,
+        // ── FigJam-specific icons ──
+        sticky: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M1.5 1.5H10.5V7.5L7.5 10.5H1.5V1.5Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
+            <path d="M7.5 7.5V10.5L10.5 7.5H7.5Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
+          </svg>
+    `,
+        connector: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M2 10L2 6H10" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7.5 3.5L10 6L7.5 8.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+    `,
+        stamp: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M6 1.5C4.5 1.5 4 3 4.5 4.5L4 6.5H8L7.5 4.5C8 3 7.5 1.5 6 1.5Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
+            <rect x="2.5" y="6.5" width="7" height="2" rx="0.5" stroke="currentColor" fill="none"/>
+            <line x1="2" y1="10.5" x2="10" y2="10.5" stroke="currentColor" stroke-linecap="round"/>
+          </svg>
+    `,
+        highlight: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M2 10C3 8 5 5 7 3.5C8 3 9.5 2.5 10 3C10.5 3.5 10 5 9 6C7 8 4 9.5 2 10Z" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+    `,
+        figjamRoundedRect: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <rect x="1.5" y="2.5" width="9" height="7" rx="2" stroke="currentColor" fill="none"/>
+          </svg>
+    `,
+        figjamCylinder: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <ellipse cx="6" cy="3" rx="4" ry="1.5" stroke="currentColor" fill="none"/>
+            <path d="M2 3V9C2 9 2 10.5 6 10.5C10 10.5 10 9 10 9V3" stroke="currentColor" fill="none"/>
+          </svg>
+    `,
+        figjamHexagon: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <path d="M6 1L10.5 3.5V8.5L6 11L1.5 8.5V3.5L6 1Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
+          </svg>
+    `,
       };
 
       // Build the icon span for a frame/favorite based on its node type.
@@ -652,7 +700,7 @@
         let iconHTML;
         if (frame.isViewport || frame.type === "VIEWPORT") {
           iconHTML = icons.viewport;
-        } else if (frame.isImage) {
+        } else if (frame.isImage && frame.type !== "STAMP") {
           iconHTML = icons.media;
         } else
         switch (frame.type) {
@@ -693,19 +741,65 @@
             iconHTML = icons.line;
             break;
           case "VECTOR":
+            if (isFigJamEditor && /^Vector \d+$/.test(frame.name)) {
+              iconHTML = icons.highlight;
+            } else {
+              iconHTML = icons.vector;
+            }
+            break;
           case "BOOLEAN_OPERATION":
             iconHTML = icons.vector;
             break;
           case "MEDIA":
             iconHTML = icons.media;
             break;
-          case "SLICE":
           case "STICKY":
+            iconHTML = icons.sticky;
+            break;
           case "CONNECTOR":
-          case "SHAPE_WITH_TEXT":
+            iconHTML = icons.connector;
+            break;
           case "STAMP":
-          case "TABLE":
+            iconHTML = icons.stamp;
+            break;
           case "HIGHLIGHT":
+            iconHTML = icons.highlight;
+            break;
+          case "SHAPE_WITH_TEXT":
+            switch (frame.shapeType) {
+              case "SQUARE":
+                iconHTML = icons.rectangle;
+                break;
+              case "ELLIPSE":
+                iconHTML = icons.ellipse;
+                break;
+              case "DIAMOND":
+                iconHTML = icons.instance;
+                break;
+              case "TRIANGLE_UP":
+              case "TRIANGLE_DOWN":
+                iconHTML = icons.polygon;
+                break;
+              case "ROUNDED_RECTANGLE":
+                iconHTML = icons.figjamRoundedRect;
+                break;
+              case "ENG_DATABASE":
+                iconHTML = icons.figjamCylinder;
+                break;
+              case "HEXAGON":
+                iconHTML = icons.figjamHexagon;
+                break;
+              case "STAR":
+                iconHTML = icons.star;
+                break;
+              default:
+                iconHTML = icons.shape;
+            }
+            break;
+          case "TABLE":
+            iconHTML = icons.table;
+            break;
+          case "SLICE":
           case "WASHI_TAPE":
           case "CODE_BLOCK":
           case "EMBED":
@@ -768,10 +862,15 @@
           // Create a span to hold the frame name
           const frameName = document.createElement("span");
           const truncateLength = showPageName ? 50 : 76;
+          // In FigJam, show default-named vectors as "Marker"
+          let historyDisplayName = frame.name;
+          if (isFigJamEditor && frame.type === "VECTOR" && /^Vector \d+$/.test(frame.name)) {
+            historyDisplayName = "Marker";
+          }
           const truncatedFrameName =
-            frame.name.length > truncateLength
-              ? frame.name.substring(0, truncateLength - 3) + "..."
-              : frame.name;
+            historyDisplayName.length > truncateLength
+              ? historyDisplayName.substring(0, truncateLength - 3) + "..."
+              : historyDisplayName;
           frameName.textContent = truncatedFrameName;
           nameContainer.appendChild(frameName);
 
@@ -916,7 +1015,12 @@
 
           const frameName = document.createElement("span");
           frameName.classList.add("favorite-name");
-          const displayName = frame.customName || updatedFrameName;
+          // In FigJam, show default-named vectors as "Marker"
+          let favDisplayBase = updatedFrameName;
+          if (isFigJamEditor && frame.type === "VECTOR" && /^Vector \d+$/.test(updatedFrameName)) {
+            favDisplayBase = "Marker";
+          }
+          const displayName = frame.customName || favDisplayBase;
           frameName.textContent =
             displayName.length > truncateLength
               ? displayName.substring(0, truncateLength - 3) + "..."

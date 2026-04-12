@@ -178,6 +178,10 @@ async function updateUI() {
       enrichedFavorites.push({
         ...updated,
         type: node.type,
+        shapeType:
+          node.type === "SHAPE_WITH_TEXT"
+            ? (node as ShapeWithTextNode).shapeType
+            : undefined,
         isVariant:
           node.type === "COMPONENT" &&
           !!node.parent &&
@@ -208,6 +212,10 @@ async function updateUI() {
         name: node.name || (node.type === "SECTION" ? "Section" : "Unnamed"),
         pageId: page.id,
         type: node.type,
+        shapeType:
+          node.type === "SHAPE_WITH_TEXT"
+            ? (node as ShapeWithTextNode).shapeType
+            : undefined,
         isVariant:
           node.type === "COMPONENT" &&
           !!node.parent &&
