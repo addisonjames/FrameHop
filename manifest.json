@@ -23,6 +23,15 @@
     {
       "name": "Hop Forwards",
       "command": "hopForwards"
+    },
+    { "separator": true },
+    {
+      "name": "Add Viewport",
+      "command": "addViewport"
+    },
+    {
+      "name": "Add to Favorites",
+      "command": "addToFavorites"
     }
   ],
   "networkAccess": {

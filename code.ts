@@ -16,7 +16,7 @@ let showPageName = true; // Control the display of the page name
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
 let currentTheme = "system"; // Default theme (follows OS appearance)
-let trackAllObjects = true; // When true, record any SceneNode; otherwise only frames/components/sections
+const trackAllObjects = true; // Always track all SceneNode types
 let autoResize = true; // When true, the plugin window auto-fits its content height
 let currentWindowWidth = 252; // Tracked so auto-resize can adjust height without changing width
 let currentWindowHeight = 360; // Tracked so we can persist the latest applied size
@@ -79,10 +79,7 @@ async function loadPluginData() {
       // Migrate old "4" history length to 8 (4 was removed as an option).
       if (historyLength === 4) historyLength = 8;
       currentTheme = parsedData.settings.theme || currentTheme;
-      trackAllObjects =
-        parsedData.settings.trackAllObjects !== undefined
-          ? parsedData.settings.trackAllObjects
-          : true;
+      // trackAllObjects is now permanently true — skip loading the old setting.
       autoResize =
         parsedData.settings.autoResize !== undefined
           ? parsedData.settings.autoResize
@@ -624,11 +621,7 @@ figma.ui.onmessage = async (msg: any) => {
       figma.ui.postMessage({ type: "applyTheme", theme: currentTheme });
       break;
 
-    case "toggleTrackAllObjects":
-      trackAllObjects = !!msg.value;
-      updatePluginData();
-      await updateUI();
-      break;
+    // Track All Objects is now permanently enabled — toggle removed.
   }
 };
 
@@ -668,5 +661,48 @@ if (figma.command === "openFrameHop") {
       await hopForwards();
     }
     isHopping = false;
+  });
+} else if (figma.command === "addViewport") {
+  figma.showUI(__html__, { width: 252, height: 360 });
+  loadPluginData().then(async () => {
+    const vp = figma.viewport;
+    const count = favorites.filter((f) => f.isViewport).length + 1;
+    favorites.push({
+      id: `viewport-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: `Viewport ${count}`,
+      isViewport: true,
+      pageId: figma.currentPage.id,
+      pageName: figma.currentPage.name,
+      viewportState: { x: vp.center.x, y: vp.center.y, zoom: vp.zoom },
+    });
+    updatePluginData();
+    await updateUI();
+  });
+} else if (figma.command === "addToFavorites") {
+  figma.showUI(__html__, { width: 252, height: 360 });
+  loadPluginData().then(async () => {
+    const selection = figma.currentPage.selection;
+    if (selection.length === 0) {
+      figma.notify("Select a frame or object first");
+      return;
+    }
+    const node = selection[0];
+    if (favorites.some((fav) => fav.id === node.id)) {
+      figma.notify("Already in favorites");
+      return;
+    }
+    let pageNode: BaseNode | null = node.parent;
+    while (pageNode && pageNode.type !== "PAGE") {
+      pageNode = pageNode.parent;
+    }
+    favorites.push({
+      id: node.id,
+      name: node.name,
+      pageId: pageNode ? pageNode.id : figma.currentPage.id,
+      pageName: pageNode ? (pageNode as PageNode).name : figma.currentPage.name,
+      isViewport: false,
+    });
+    updatePluginData();
+    await updateUI();
   });
 }
