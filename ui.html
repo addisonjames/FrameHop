@@ -508,7 +508,7 @@
           <span id="clearData">Clear Data</span>
         </div>
         <div class="settings-popover-divider"></div>
-        <div class="settings-version">v1.1.9</div>
+        <div class="settings-version">v1.1.91</div>
       </div>
     </div>
 
@@ -540,7 +540,7 @@
       let history = [];
       let currentIndex = -1;
       let favorites = [];
-      let showPageName = true; // Initialize the variable to store the toggle state
+      let showPageName = false; // Initialize the variable to store the toggle state
       let hasMultiplePages = false; // True when figma.root has more than one page; gates page-name UI
       let isFigJamEditor = false; // Tracked from loadSettings so update handler can re-evaluate FigJam-specific visibility
       let historyDragFrame = null; // Frame currently being dragged from history → favorites
@@ -1671,7 +1671,10 @@
 
           case "showPageNameUpdated":
             // This message should be sent from code.js after the showPageName state is updated
-            document.getElementById("togglePageName").checked = newShowPageName;
+            showPageName = event.data.pluginMessage.showPageName;
+            document.getElementById("togglePageName").checked = showPageName;
+            updateFrameList(history, currentIndex);
+            updateFavoriteList(favorites, currentFavoriteIndex);
             break;
 
           case "autoResizeChanged":

@@ -3,7 +3,8 @@
 let history = [];
 let currentIndex = -1;
 let favorites = [];
-let showPageName = true; // Control the display of the page name
+let showPageName = false; // Control the display of the page name
+let pageNamesAutoEnabled = false; // True once page names were auto-enabled; prevents repeat auto-enable
 let historyLength = 8; // Default history length
 let currentFavoriteIndex = -1;
 let currentTheme = "system"; // Default theme (follows OS appearance)
@@ -37,6 +38,7 @@ function updatePluginData() {
         favorites,
         settings: {
             showPageName: showPageName,
+            pageNamesAutoEnabled: pageNamesAutoEnabled,
             historyLength: historyLength,
             theme: currentTheme,
             trackAllObjects: trackAllObjects,
@@ -45,6 +47,21 @@ function updatePluginData() {
     };
     console.log("Saving updated plugin data with history length:", historyLength);
     figma.root.setPluginData("frameHopData", JSON.stringify(data));
+}
+// Auto-enable page names the first time history spans multiple pages.
+function maybeAutoEnablePageNames() {
+    if (showPageName || pageNamesAutoEnabled)
+        return;
+    const uniquePages = new Set(history.map((h) => h.pageId));
+    if (uniquePages.size > 1) {
+        showPageName = true;
+        pageNamesAutoEnabled = true;
+        updatePluginData();
+        figma.ui.postMessage({
+            type: "showPageNameUpdated",
+            showPageName: true,
+        });
+    }
 }
 async function loadPluginData() {
     const data = figma.root.getPluginData("frameHopData");
@@ -60,6 +77,10 @@ async function loadPluginData() {
                 parsedData.settings.showPageName !== undefined
                     ? parsedData.settings.showPageName
                     : showPageName;
+            pageNamesAutoEnabled =
+                parsedData.settings.pageNamesAutoEnabled !== undefined
+                    ? parsedData.settings.pageNamesAutoEnabled
+                    : pageNamesAutoEnabled;
             historyLength = parsedData.settings.historyLength || historyLength;
             // Migrate old "4" history length to 8 (4 was removed as an option).
             if (historyLength === 4)
@@ -302,6 +323,7 @@ async function updateHistory() {
                 history[itemIndex].pageId = pageId;
                 currentIndex = itemIndex;
             }
+            maybeAutoEnablePageNames();
             updatePluginData();
             await updateUI();
         }
