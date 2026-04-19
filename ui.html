@@ -209,6 +209,19 @@
         border-radius: 4px;
         pointer-events: none;
       }
+      body.favorite-dragging #frameList .history-item {
+        opacity: 0.15;
+      }
+      body.favorite-dragging #frameList::after {
+        content: "Drop to remove";
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 11px;
+        color: var(--text-color-secondary);
+        pointer-events: none;
+      }
       .history-item[draggable="true"] {
         cursor: grab;
       }
@@ -938,12 +951,8 @@
 
           listItem.addEventListener("dragstart", (e) => {
             dragSourceIndex = index;
-            // Viewport favorites can only be reordered within favorites — they
-            // must not arm the history drop-target (no outline, no removal).
-            if (!frame.isViewport) {
-              favoriteDragFrame = frame;
-              document.body.classList.add("favorite-dragging");
-            }
+            favoriteDragFrame = frame;
+            document.body.classList.add("favorite-dragging");
             listItem.classList.add("dragging");
             if (e.dataTransfer) {
               e.dataTransfer.effectAllowed = "move";
