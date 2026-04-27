@@ -93,17 +93,26 @@
       .eyebrow-action:hover {
         background-color: var(--button-bg-hover-color);
       }
+      /* Dim via color (not opacity) so the ::after tooltip stays fully
+         opaque — opacity on the parent cascades into the pseudo-element. */
+      .eyebrow-action:disabled {
+        color: var(--text-color-secondary);
+        border-color: var(--button-bg-color);
+      }
+      .eyebrow-action:disabled:hover {
+        background-color: var(--button-bg-color);
+      }
       .eyebrow-action svg {
         display: block;
       }
       /* Custom tooltip — appears faster than the native title attribute,
-         and anchors to the left of the button so it stays inside the panel. */
+         and anchors its right edge to the button's right edge so it always
+         extends leftward into the panel and never clips off the right side. */
       .eyebrow-action[data-tooltip]::after {
         content: attr(data-tooltip);
         position: absolute;
-        top: 50%;
-        right: calc(100% + 6px);
-        transform: translateY(-50%);
+        top: calc(100% + 6px);
+        right: 0;
         background-color: #3a3a3a;
         color: #ffffff;
         font-size: 11px;
@@ -539,7 +548,10 @@
     <hr class="hr" />
 
     <!-- History -->
-    <div class="eyebrow">History</div>
+    <div class="eyebrow eyebrow-row">
+      <span>History</span>
+      <button id="saveSelectionBtn" class="eyebrow-action" aria-label="Add selection" data-tooltip="Select multiple items" disabled>Add Selection</button>
+    </div>
     <ul id="frameList"></ul>
 
     <!-- Resize Handle -->
@@ -704,13 +716,24 @@
             <path d="M6 1L10.5 3.5V8.5L6 11L1.5 8.5V3.5L6 1Z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
           </svg>
     `,
+        selection: `
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-color);">
+            <rect x="1.5" y="1.5" width="9" height="9" stroke="currentColor" stroke-dasharray="2 1.5" fill="none"/>
+            <rect x="0" y="0" width="2" height="2" fill="currentColor"/>
+            <rect x="10" y="0" width="2" height="2" fill="currentColor"/>
+            <rect x="0" y="10" width="2" height="2" fill="currentColor"/>
+            <rect x="10" y="10" width="2" height="2" fill="currentColor"/>
+          </svg>
+    `,
       };
 
       // Build the icon span for a frame/favorite based on its node type.
       // Returns a <span> element with the SVG icon and the right color class.
       function buildFrameIcon(frame) {
         let iconHTML;
-        if (frame.isViewport || frame.type === "VIEWPORT") {
+        if (frame.isSelection || frame.type === "SELECTION") {
+          iconHTML = icons.selection;
+        } else if (frame.isViewport || frame.type === "VIEWPORT") {
           iconHTML = icons.viewport;
         } else if (frame.isImage && frame.type !== "STAMP") {
           iconHTML = icons.media;
@@ -834,11 +857,11 @@
         return span;
       }
 
-      function updateFrameList(historyData, currentFrameId) {
+      function updateFrameList(historyData, currentFrameId, selectedFrameIds = []) {
         // Get the list element and clear its current content
         const list = document.getElementById("frameList");
         list.innerHTML = "";
-        let currentFrameFound = false;
+        const selectedSet = new Set(selectedFrameIds);
 
         // Loop through each frame in the history data
         historyData.forEach((frame) => {
@@ -920,10 +943,9 @@
             }
           };
 
-          // Highlight the current frame if found
-          if (frame.id === currentFrameId && !currentFrameFound) {
+          // Highlight every history row whose node is currently selected.
+          if (selectedSet.has(frame.id)) {
             listItem.classList.add("highlight-row-style");
-            currentFrameFound = true;
           }
 
           // Append the list item to the list
@@ -931,11 +953,12 @@
         });
       }
 
-      function updateFavoriteList(favorites, currentFavoriteIndex) {
+      function updateFavoriteList(favorites, currentFavoriteIndex, selectedFrameIds = []) {
         const list = document.getElementById("favoriteList");
         list.innerHTML = "";
         const truncateLength = 77; // Truncation length for frame names in favorites
         let dragSourceIndex = null;
+        const selectedSet = new Set(selectedFrameIds);
 
         favorites.forEach((frame, index) => {
           // Fetch the latest node information from Figma
@@ -1165,7 +1188,10 @@
             updateFavoriteList(favorites, currentFavoriteIndex);
           };
 
-          if (currentFavoriteIndex === index) {
+          // Highlight any favorite whose node is currently selected. The
+          // currentFavoriteIndex fallback preserves the "sticky" highlight
+          // for viewport favorites, which clear the canvas selection on click.
+          if (selectedSet.has(frame.id) || currentFavoriteIndex === index) {
             listItem.style.backgroundColor = "";
             listItem.classList.add("highlight-row-style");
           }
@@ -1213,6 +1239,15 @@
       document.getElementById("saveViewportBtn").onclick = function () {
         parent.postMessage(
           { pluginMessage: { type: "saveViewport" } },
+          "*"
+        );
+      };
+
+      // Save the current multi-selection (2+ nodes) as a favorite.
+      document.getElementById("saveSelectionBtn").onclick = function () {
+        if (this.disabled) return;
+        parent.postMessage(
+          { pluginMessage: { type: "saveSelection" } },
           "*"
         );
       };
@@ -1556,6 +1591,7 @@
           type,
           historyData,
           currentFrameId,
+          selectedFrameIds = [],
           favorites: updatedFavorites,
           showPageName: newShowPageName,
           historyLength: newHistoryLength,
@@ -1599,9 +1635,22 @@
               }
             }
             // Update the list of frames in the UI
-            updateFrameList(historyData, currentFrameId);
+            updateFrameList(historyData, currentFrameId, selectedFrameIds);
             // Update the list of favorites in the UI
-            updateFavoriteList(favorites, currentFavoriteIndex);
+            updateFavoriteList(favorites, currentFavoriteIndex, selectedFrameIds);
+            // Add Selection button is only useful with 2+ items selected.
+            // The tooltip explains the requirement on hover when disabled;
+            // clear it when enabled so an active button doesn't show stale text.
+            const saveSelectionBtn = document.getElementById("saveSelectionBtn");
+            if (saveSelectionBtn) {
+              const isDisabled = selectedFrameIds.length < 2;
+              saveSelectionBtn.disabled = isDisabled;
+              if (isDisabled) {
+                saveSelectionBtn.setAttribute("data-tooltip", "Select multiple items");
+              } else {
+                saveSelectionBtn.removeAttribute("data-tooltip");
+              }
+            }
             // Update the history length display in the UI
             document.getElementById("historyLengthDisplay").textContent =
               event.data.pluginMessage.historyLength;

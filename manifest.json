@@ -30,6 +30,10 @@
       "command": "addViewport"
     },
     {
+      "name": "Add Selection",
+      "command": "addSelection"
+    },
+    {
       "name": "Add to Favorites",
       "command": "addToFavorites"
     }

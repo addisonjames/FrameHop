@@ -11,6 +11,8 @@ let favorites: {
   pageName?: string;
   isViewport?: boolean;
   viewportState?: { x: number; y: number; zoom: number };
+  isSelection?: boolean;
+  selectionIds?: string[];
 }[] = [];
 let showPageName = false; // Control the display of the page name
 let pageNamesAutoEnabled = false; // True once page names were auto-enabled; prevents repeat auto-enable
@@ -33,6 +35,10 @@ function computeAutoResizeMaxHeight() {
 }
 let isNavigating = false; // Suppress updateHistory during programmatic navigation
 let isHopping = false; // Suppress updateHistory during hop command startup
+// Tracks the previous selection so updateHistory can push only items that
+// just joined the selection (instead of whatever happens to be selection[0]
+// after Figma's z-order reshuffle on each cmd-click).
+let lastSelectionIds: string[] = [];
 
 // Set relaunch data with a descriptive string for the relaunch button
 figma.root.setRelaunchData({ openFrameHop: "" });
@@ -147,6 +153,8 @@ async function updateUI() {
     figma.currentPage.selection.length > 0
       ? figma.currentPage.selection[0].id
       : null;
+  // Full set of currently selected node IDs — drives multi-highlight in the UI.
+  const selectedFrameIds = figma.currentPage.selection.map((n) => n.id);
 
   // Page-name display only makes sense when there's more than one page to
   // disambiguate against. Suppress everywhere when single-page (settings
@@ -174,6 +182,11 @@ async function updateUI() {
     if (fav.isViewport) {
       updatedFavorites.push(fav);
       enrichedFavorites.push({ ...fav, type: "VIEWPORT" });
+      continue;
+    }
+    if (fav.isSelection) {
+      updatedFavorites.push(fav);
+      enrichedFavorites.push({ ...fav, type: "SELECTION" });
       continue;
     }
     const node = await figma.getNodeByIdAsync(fav.id);
@@ -258,6 +271,7 @@ async function updateUI() {
     type: "update",
     historyData: recentHistory,
     currentFrameId: currentSelectionId,
+    selectedFrameIds: selectedFrameIds,
     currentPageId: figma.currentPage.id,
     favorites: enrichedFavorites,
     currentFavoriteIndex: currentFavoriteIndex,
@@ -279,6 +293,10 @@ async function jumpToFrame(frameId: string) {
       isNavigating = true;
       await figma.setCurrentPageAsync(page as PageNode);
       figma.currentPage.selection = [];
+      // Keep the diff baseline in sync with the programmatic clear so the
+      // next user-driven selectionchange doesn't see the old selection as
+      // "still there" and skip pushing the user's actual click.
+      lastSelectionIds = [];
       // Zoom must be set before center per the Figma plugin API.
       figma.viewport.zoom = vpFav.viewportState.zoom;
       figma.viewport.center = {
@@ -314,6 +332,68 @@ async function jumpToFrame(frameId: string) {
     return;
   }
 
+  // Selection favorite: re-select the saved nodes and zoom to fit them.
+  const selFav = favorites.find((f) => f.id === frameId && f.isSelection);
+  if (selFav && selFav.selectionIds && selFav.pageId) {
+    const page = await figma.getNodeByIdAsync(selFav.pageId);
+    if (page && page.type === "PAGE") {
+      isNavigating = true;
+      await figma.setCurrentPageAsync(page as PageNode);
+
+      const resolved: SceneNode[] = [];
+      for (const nid of selFav.selectionIds) {
+        const node = await figma.getNodeByIdAsync(nid);
+        if (
+          node &&
+          "type" in node &&
+          node.type !== "PAGE" &&
+          node.type !== "DOCUMENT"
+        ) {
+          resolved.push(node as SceneNode);
+        }
+      }
+
+      if (resolved.length === 0) {
+        figma.notify("None of the saved items still exist");
+        isNavigating = false;
+        await updateUI();
+        return;
+      }
+
+      figma.currentPage.selection = resolved;
+      figma.viewport.scrollAndZoomIntoView(resolved);
+      lastSelectionIds = resolved.map((n) => n.id);
+
+      if (resolved.length < selFav.selectionIds.length) {
+        const missing = selFav.selectionIds.length - resolved.length;
+        figma.notify(
+          `Restored ${resolved.length} of ${selFav.selectionIds.length} items (${missing} missing)`
+        );
+      }
+
+      currentFavoriteIndex = favorites.findIndex((f) => f.id === frameId);
+      // Side excursion off the history timeline — bump currentIndex so the
+      // next hopBackwards returns to the user's last history position.
+      if (currentIndex >= 0 && currentIndex < history.length) {
+        currentIndex += 1;
+      }
+      // Defer clearing isNavigating to dodge the trailing selectionchange
+      // event from the programmatic selection write above.
+      setTimeout(() => {
+        isNavigating = false;
+      }, 50);
+      console.log(
+        "Restored selection favorite:",
+        frameId,
+        `(${resolved.length} nodes)`
+      );
+    } else {
+      figma.notify("Page not found for this selection");
+    }
+    await updateUI();
+    return;
+  }
+
   const targetFrame = await figma.getNodeByIdAsync(frameId);
 
   if (targetFrame) {
@@ -328,6 +408,8 @@ async function jumpToFrame(frameId: string) {
       await figma.setCurrentPageAsync(targetPage as PageNode);
       figma.currentPage.selection = [targetFrame as SceneNode];
       figma.viewport.scrollAndZoomIntoView([targetFrame as SceneNode]);
+      // Sync the diff baseline so a follow-up cmd-click is recognized as new.
+      lastSelectionIds = [(targetFrame as SceneNode).id];
       isNavigating = false;
 
       // Update currentIndex and currentFavoriteIndex
@@ -360,46 +442,60 @@ function getPageIdForNode(node: BaseNode): string | null {
 
 async function updateHistory() {
   const currentSelection = figma.currentPage.selection;
-  if (currentSelection.length > 0) {
-    const selectedItem = currentSelection[0];
-    console.log("Selected item type:", selectedItem.type);
-    const itemType = selectedItem.type;
-    const typeAllowed = trackAllObjects || RESTRICTED_TRACK_TYPES.has(itemType);
-    if (typeAllowed) {
-      const itemId = selectedItem.id;
-      const pageId = getPageIdForNode(selectedItem);
-      if (!pageId) {
-        await updateUI();
-        return;
-      }
-      const isSection = itemType === "SECTION";
-      const item = { frameId: itemId, pageId: pageId, isSection: isSection };
+  const currentIds = currentSelection.map((n) => n.id);
 
-      const itemIndex = history.findIndex(
-        (h) => h.frameId === itemId
-      );
-      if (itemIndex === -1) {
-        // Add new item and slice the history if it exceeds historyLength
-        history.push(item);
-        if (history.length > historyLength) {
-          history = history.slice(-historyLength);
-        }
-        currentIndex = history.length - 1;
-      } else {
-        // Update pageId in case frame was moved, and update currentIndex
-        history[itemIndex].pageId = pageId;
-        currentIndex = itemIndex;
-      }
-      maybeAutoEnablePageNames();
-      updatePluginData();
-      await updateUI();
-    }
-  } else {
-    // Reset currentIndex if nothing is selected
+  // Empty selection — preserve existing reset behavior.
+  if (currentSelection.length === 0) {
+    lastSelectionIds = [];
     currentIndex = history.length > 0 ? history.length - 1 : -1;
     updatePluginData();
     await updateUI();
+    return;
   }
+
+  // Push only items that just joined the selection (set diff against the
+  // previous selection). This records each cmd-click as its own history
+  // entry — including across multi-select — without re-pushing items every
+  // time Figma reshuffles selection[] by document order.
+  const prevSet = new Set(lastSelectionIds);
+  const newItems = currentSelection.filter((n) => !prevSet.has(n.id));
+
+  let pushedAny = false;
+  for (const item of newItems) {
+    const itemType = item.type;
+    const typeAllowed = trackAllObjects || RESTRICTED_TRACK_TYPES.has(itemType);
+    if (!typeAllowed) continue;
+    const pageId = getPageIdForNode(item);
+    if (!pageId) continue;
+    const isSection = itemType === "SECTION";
+    const itemIndex = history.findIndex((h) => h.frameId === item.id);
+    if (itemIndex === -1) {
+      history.push({ frameId: item.id, pageId, isSection });
+      if (history.length > historyLength) {
+        history = history.slice(-historyLength);
+      }
+      currentIndex = history.length - 1;
+      pushedAny = true;
+    } else {
+      history[itemIndex].pageId = pageId;
+      currentIndex = itemIndex;
+    }
+  }
+
+  // Selection only shrank (e.g. cmd-clicked to deselect). Re-anchor
+  // currentIndex on selection[0] if it lives in history so hop-back has a
+  // sensible starting point; otherwise leave currentIndex alone.
+  if (newItems.length === 0) {
+    const anchorIdx = history.findIndex(
+      (h) => h.frameId === currentSelection[0].id
+    );
+    if (anchorIdx !== -1) currentIndex = anchorIdx;
+  }
+
+  if (pushedAny) maybeAutoEnablePageNames();
+  lastSelectionIds = currentIds;
+  updatePluginData();
+  await updateUI();
 }
 
 figma.on("selectionchange", () => {
@@ -548,6 +644,8 @@ figma.ui.onmessage = async (msg: any) => {
         isSection: fav.isSection,
         isViewport: fav.isViewport,
         viewportState: fav.viewportState,
+        isSelection: fav.isSelection,
+        selectionIds: fav.selectionIds,
       }));
       updatePluginData();
       await updateUI();
@@ -565,6 +663,27 @@ figma.ui.onmessage = async (msg: any) => {
         pageId: figma.currentPage.id,
         pageName: figma.currentPage.name,
         viewportState: { x: vp.center.x, y: vp.center.y, zoom: vp.zoom },
+      });
+      updatePluginData();
+      await updateUI();
+      break;
+    }
+
+    case "saveSelection": {
+      const selection = figma.currentPage.selection;
+      if (selection.length < 2) {
+        figma.notify("Select 2 or more items first");
+        break;
+      }
+      favorites.push({
+        id: `selection-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 7)}`,
+        name: `Selection (${selection.length} items)`,
+        isSelection: true,
+        pageId: figma.currentPage.id,
+        pageName: figma.currentPage.name,
+        selectionIds: selection.map((n) => n.id),
       });
       updatePluginData();
       await updateUI();
@@ -723,6 +842,25 @@ if (figma.command === "openFrameHop") {
       pageId: pageNode ? pageNode.id : figma.currentPage.id,
       pageName: pageNode ? (pageNode as PageNode).name : figma.currentPage.name,
       isViewport: false,
+    });
+    updatePluginData();
+    await updateUI();
+  });
+} else if (figma.command === "addSelection") {
+  figma.showUI(__html__, { width: 252, height: 360 });
+  loadPluginData().then(async () => {
+    const selection = figma.currentPage.selection;
+    if (selection.length < 2) {
+      figma.notify("Select 2 or more items first");
+      return;
+    }
+    favorites.push({
+      id: `selection-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: `Selection (${selection.length} items)`,
+      isSelection: true,
+      pageId: figma.currentPage.id,
+      pageName: figma.currentPage.name,
+      selectionIds: selection.map((n) => n.id),
     });
     updatePluginData();
     await updateUI();
