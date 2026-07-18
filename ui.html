@@ -244,10 +244,42 @@
         display: flex;
         align-items: center;
         flex-grow: 1; /* Allows it to take up available space */
+        min-width: 0; /* Lets the name shrink below its content width so the ellipsis can engage */
       }
 
       .name-container span:first-child {
         margin-right: 7px; /* Adjust the value to add space between Layer icon and Frame name */
+      }
+
+      /* Single-line ellipsis for list-row names (history + favorites).
+         flex-grow is 0 on purpose — we don't want the name expanding to fill
+         leftover space, because that pushes a sibling page-name to the right
+         and creates a visible gap. Leftover space stays at the row's right edge. */
+      .row-name {
+        flex: 0 1 auto;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Page-name suffix is a sibling of .row-name so each gets its own ellipsis
+         instead of the page being swallowed by the frame name's truncation.
+         No max-width: when there's room, the page name renders fully right
+         after the frame name; when there isn't, both shrink proportionally. */
+      .row-page-name {
+        flex: 0 1 auto;
+        min-width: 0;
+        margin-left: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* While renaming a favorite, hide the page-name so the contenteditable
+         frame name can extend without colliding with the suffix. */
+      .name-container:has(.editing) .row-page-name {
+        display: none;
       }
 
       .highlight-row-style {
@@ -275,6 +307,8 @@
         padding: 0 2px;
         cursor: text;
         white-space: nowrap;
+        overflow: visible; /* Override .row-name's overflow: hidden while renaming */
+        text-overflow: clip;
       }
 
       /* Style for star icon in favorite list */
@@ -314,12 +348,6 @@
       }
       .favorite-remove-icon:hover {
         color: var(--text-color);
-      }
-
-      .name-container {
-        display: flex;
-        align-items: center;
-        flex-grow: 1; /* Allows it to take up available space */
       }
 
       /* New class for the settings title similar to History */
@@ -896,34 +924,27 @@
 
           // Create a span to hold the frame name
           const frameName = document.createElement("span");
-          const truncateLength = showPageName ? 50 : 76;
+          frameName.classList.add("row-name");
           // In FigJam, show default-named vectors as "Marker"
           let historyDisplayName = frame.name;
           if (isFigJamEditor && frame.type === "VECTOR" && /^Vector \d+$/.test(frame.name)) {
             historyDisplayName = "Marker";
           }
-          const truncatedFrameName =
-            historyDisplayName.length > truncateLength
-              ? historyDisplayName.substring(0, truncateLength - 3) + "..."
-              : historyDisplayName;
-          frameName.textContent = truncatedFrameName;
+          frameName.textContent = historyDisplayName;
           nameContainer.appendChild(frameName);
 
-          listItem.appendChild(nameContainer);
-
-          // If showing page names, add the page name to the list item
+          let titleText = historyDisplayName;
+          // If showing page names, append the page name as a sibling so the
+          // frame name and page name each get their own ellipsis — otherwise
+          // a long name would clip the page name off the row entirely.
           if (showPageName && frame.pageName) {
-            const pageNameTruncateLength = 22;
-            const truncatedPageName =
-              frame.pageName.length > pageNameTruncateLength
-                ? frame.pageName.substring(0, pageNameTruncateLength - 3) +
-                  "..."
-                : frame.pageName;
             const pageNameSpan = document.createElement("span");
-            pageNameSpan.textContent = ` (${truncatedPageName})`;
-            pageNameSpan.className = "page-name-style";
-            frameName.appendChild(pageNameSpan);
+            pageNameSpan.textContent = `(${frame.pageName})`;
+            pageNameSpan.className = "page-name-style row-page-name";
+            nameContainer.appendChild(pageNameSpan);
+            titleText += ` (${frame.pageName})`;
           }
+          listItem.title = titleText;
 
           listItem.appendChild(nameContainer);
 
@@ -956,7 +977,6 @@
       function updateFavoriteList(favorites, currentFavoriteIndex, selectedFrameIds = []) {
         const list = document.getElementById("favoriteList");
         list.innerHTML = "";
-        const truncateLength = 77; // Truncation length for frame names in favorites
         let dragSourceIndex = null;
         const selectedSet = new Set(selectedFrameIds);
 
@@ -1046,37 +1066,33 @@
 
           const frameName = document.createElement("span");
           frameName.classList.add("favorite-name");
+          frameName.classList.add("row-name");
           // In FigJam, show default-named vectors as "Marker"
           let favDisplayBase = updatedFrameName;
           if (isFigJamEditor && frame.type === "VECTOR" && /^Vector \d+$/.test(updatedFrameName)) {
             favDisplayBase = "Marker";
           }
           const displayName = frame.customName || favDisplayBase;
-          frameName.textContent =
-            displayName.length > truncateLength
-              ? displayName.substring(0, truncateLength - 3) + "..."
-              : displayName;
-          frameName.title = displayName;
+          frameName.textContent = displayName;
+          nameContainer.appendChild(frameName);
+
+          let favTitleText = displayName;
           // In multi-page files, append the page name in the same muted
           // style history items use — applies to both viewport favorites
           // and frame favorites so users can tell items across pages apart.
+          // Sibling of frameName (not a child) so both ellipsize independently.
           if (
             showPageName &&
             hasMultiplePages &&
             frame.pageName
           ) {
-            const pageNameTruncateLength = 22;
-            const truncatedPageName =
-              frame.pageName.length > pageNameTruncateLength
-                ? frame.pageName.substring(0, pageNameTruncateLength - 3) +
-                  "..."
-                : frame.pageName;
             const pageNameSpan = document.createElement("span");
-            pageNameSpan.textContent = ` (${truncatedPageName})`;
-            pageNameSpan.className = "page-name-style";
-            frameName.appendChild(pageNameSpan);
+            pageNameSpan.textContent = `(${frame.pageName})`;
+            pageNameSpan.className = "page-name-style row-page-name";
+            nameContainer.appendChild(pageNameSpan);
+            favTitleText += ` (${frame.pageName})`;
           }
-          nameContainer.appendChild(frameName);
+          listItem.title = favTitleText;
 
           let pendingJumpTimer = null;
 
