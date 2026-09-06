@@ -201,12 +201,20 @@
       /* Drop target hint when dragging between history and favorites.
          A pseudo-element draws the dashed border inset from the edges so it
          doesn't sit flush against the panel walls (and doesn't shift content). */
-      body.history-dragging #favoriteList,
-      body.favorite-dragging #frameList {
-        position: relative;
+      /* Reserve the drop-zone height permanently instead of adding it on
+         dragstart. Growing the body mid-drag trips the auto-resize
+         ResizeObserver -> figma.ui.resize(), and resizing the plugin iframe
+         cancels an in-flight drag. That is why History -> Favorites died while
+         the reverse direction (onto the already-tall #frameList) survived. */
+      #favoriteList,
+      #frameList {
         min-height: 28px;
       }
-      body.history-dragging #favoriteList::before,
+      body.history-dragging #favoritesZone,
+      body.favorite-dragging #frameList {
+        position: relative;
+      }
+      body.history-dragging #favoritesZone::before,
       body.favorite-dragging #frameList::before {
         content: "";
         position: absolute;
@@ -566,11 +574,13 @@
     <hr class="hr" />
 
     <!-- Favorites -->
-    <div class="eyebrow eyebrow-row">
-      <span>Favorites</span>
-      <button id="saveViewportBtn" class="eyebrow-action" aria-label="Add viewport">Add Viewport</button>
+    <div id="favoritesZone">
+      <div class="eyebrow eyebrow-row">
+        <span>Favorites</span>
+        <button id="saveViewportBtn" class="eyebrow-action" aria-label="Add viewport">Add Viewport</button>
+      </div>
+      <ul id="favoriteList"></ul>
     </div>
-    <ul id="favoriteList"></ul>
 
     <!-- Divider -->
     <hr class="hr" />
@@ -904,7 +914,7 @@
             listItem.classList.add("dragging");
             document.body.classList.add("history-dragging");
             if (e.dataTransfer) {
-              e.dataTransfer.effectAllowed = "copy";
+              e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData("text/plain", frame.id);
             }
           });
@@ -912,6 +922,10 @@
             historyDragFrame = null;
             listItem.classList.remove("dragging");
             document.body.classList.remove("history-dragging");
+            // Clear any insertion line left behind in the favorites list.
+            document
+              .querySelectorAll("#favoriteList .drop-above, #favoriteList .drop-below")
+              .forEach((el) => el.classList.remove("drop-above", "drop-below"));
           });
 
           // Create a container for frame icon and name
@@ -1003,7 +1017,10 @@
             }
           });
           listItem.addEventListener("dragover", (e) => {
-            if (dragSourceIndex === null) return;
+            // Two drags can land on a favorite row: a reorder from within this
+            // list (dragSourceIndex set) and a History row being added
+            // (historyDragFrame set). Both get the same insertion line.
+            if (dragSourceIndex === null && !historyDragFrame) return;
             e.preventDefault();
             if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
             const rect = listItem.getBoundingClientRect();
@@ -1015,11 +1032,26 @@
             listItem.classList.remove("drop-above", "drop-below");
           });
           listItem.addEventListener("drop", (e) => {
-            e.preventDefault();
             listItem.classList.remove("drop-above", "drop-below");
-            if (dragSourceIndex === null || dragSourceIndex === index) return;
             const rect = listItem.getBoundingClientRect();
             const dropBelow = e.clientY >= rect.top + rect.height / 2;
+
+            // A History row dropped onto a favorite is inserted at exactly the
+            // spot the insertion line was drawn. Handled here rather than by
+            // the #favoritesZone handler, so stop it from also appending.
+            if (dragSourceIndex === null) {
+              if (!historyDragFrame) return;
+              e.preventDefault();
+              e.stopPropagation();
+              const dropped = historyDragFrame;
+              historyDragFrame = null;
+              document.body.classList.remove("history-dragging");
+              addFavoriteAt(dropped, dropBelow ? index + 1 : index);
+              return;
+            }
+
+            e.preventDefault();
+            if (dragSourceIndex === index) return;
             let targetIndex = dropBelow ? index + 1 : index;
             if (dragSourceIndex < targetIndex) targetIndex -= 1;
             if (targetIndex === dragSourceIndex) return;
@@ -1043,6 +1075,13 @@
               { pluginMessage: { type: "updateFavoritesOrder", favorites } },
               "*"
             );
+            // Clear drag state before re-rendering: updateFavoriteList wipes
+            // the list, and Chromium often skips dragend for a node removed
+            // mid-drag — which would otherwise leave favoriteDragFrame and
+            // body.favorite-dragging stuck on.
+            dragSourceIndex = null;
+            favoriteDragFrame = null;
+            document.body.classList.remove("favorite-dragging");
             updateFavoriteList(favorites, currentFavoriteIndex);
           });
           listItem.addEventListener("dragend", () => {
@@ -1229,6 +1268,23 @@
             isSection: frame.isSection || false,
           });
         }
+        parent.postMessage(
+          { pluginMessage: { type: "updateFavorites", favorites: favorites } },
+          "*"
+        );
+      }
+
+      // Add a frame to favorites at a specific position (null = append).
+      // Spreads the source frame so type/isViewport/isSelection survive until
+      // the plugin echoes back its enriched copy — buildFrameIcon needs type.
+      function addFavoriteAt(frame, index) {
+        if (favorites.some((fav) => fav.id === frame.id)) return;
+        const entry = { ...frame, isSection: frame.isSection || false };
+        favorites.splice(
+          index === null || index === undefined ? favorites.length : index,
+          0,
+          entry
+        );
         parent.postMessage(
           { pluginMessage: { type: "updateFavorites", favorites: favorites } },
           "*"
@@ -1425,22 +1481,22 @@
       // as a favorite (no-op if it's already favorited). Equivalent to clicking
       // the row's star — it doesn't move the item out of history.
       (function wireFavoritesDropTarget() {
-        const favList = document.getElementById("favoriteList");
-        favList.addEventListener("dragover", (e) => {
+        const favZone = document.getElementById("favoritesZone");
+        favZone.addEventListener("dragover", (e) => {
           if (!historyDragFrame) return;
           e.preventDefault();
-          if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
         });
-        favList.addEventListener("drop", (e) => {
+        favZone.addEventListener("drop", (e) => {
           if (!historyDragFrame) return;
           e.preventDefault();
           const dropped = historyDragFrame;
           historyDragFrame = null;
           document.body.classList.remove("history-dragging");
-          const alreadyFavorite = favorites.some((f) => f.id === dropped.id);
-          if (!alreadyFavorite) {
-            toggleFavorite(dropped);
-          }
+          // Only reached for a drop on the header or the empty area below the
+          // rows — a drop on a row is handled by that row, which stops
+          // propagation so the item lands at the insertion line instead.
+          addFavoriteAt(dropped, null);
         });
       })();
 
@@ -1540,6 +1596,8 @@
 
         function postAutoResize(force) {
           if (!autoResizeEnabled && !force) return;
+          // Resizing the plugin iframe during a drag cancels the drag.
+          if (historyDragFrame || favoriteDragFrame) return;
           const h = measureContentHeight();
           if (!h) return;
           if (!force && Math.abs(h - lastPostedAutoHeight) < 2) return;
