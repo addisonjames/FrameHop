@@ -6,11 +6,11 @@ A faster way to move around your Figma and FigJam files.
 
 ## Features
 
-- **Frame History:** FrameHop keeps a list of your recently selected layers,
-  Frames, Components, Component Variants, Sections and anything else you click.
+- **History:** FrameHop keeps a list of your recently selected layers, Frames,
+  Components, Component Variants, Sections and anything else you click.
 - **Hop Around:** Click any Layer in the list to instantly jump to it. Works
   across Pages too.
-- **Favorite Frames:** Mark any Layer as a favorite for quick access. Rename
+- **Favorites:** Mark any Layer as a favorite for quick access. Rename
   them and drag to reorder.
 - **Viewports and Selections:** Save your current viewport or a multi-layer
   selection, and restore it in a single click.
