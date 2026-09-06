@@ -26,12 +26,22 @@ let currentWindowHeight = 360; // Tracked so we can persist the latest applied s
 // Floor at 316px so the settings popover is fully visible even when the
 // favorites and history lists are empty.
 const AUTO_RESIZE_MIN_HEIGHT = 316;
-// Max height scales with the history-length setting so the cap is generous
-// for 16 items but tight for 8. ~25px per history slot on top of the base UI.
-const AUTO_RESIZE_BASE_HEIGHT = 200;
-const AUTO_RESIZE_PER_ITEM = 25;
+// Ceiling on auto-resize growth. Both lists share the window, so the cap has
+// to cover a full history list *plus* however many favorites are pinned --
+// otherwise each favorite silently steals a history row. Rows are a fixed 32px
+// (.history-item / .favorite-item in ui.html); page names are inline siblings,
+// so they never add a second line.
+//
+// The applied height is min(cap, measured content height), so over-estimating
+// here costs nothing -- the window still only ever grows to fit real content.
+// Under-estimating is what truncates the list, hence the generous base.
+const AUTO_RESIZE_BASE_HEIGHT = 240;
+const AUTO_RESIZE_PER_ITEM = 32;
 function computeAutoResizeMaxHeight() {
-  return AUTO_RESIZE_BASE_HEIGHT + historyLength * AUTO_RESIZE_PER_ITEM;
+  return (
+    AUTO_RESIZE_BASE_HEIGHT +
+    (historyLength + favorites.length) * AUTO_RESIZE_PER_ITEM
+  );
 }
 let isNavigating = false; // Suppress updateHistory during programmatic navigation
 let isHopping = false; // Suppress updateHistory during hop command startup
@@ -88,7 +98,13 @@ async function loadPluginData() {
 
   if (data) {
     const parsedData = JSON.parse(data);
-    history = parsedData.history || [];
+    // Normalize to the fields we actually use. Saved data can carry stray
+    // keys from other builds, which would otherwise be written back forever.
+    history = (parsedData.history || []).map((h: any) => ({
+      frameId: h.frameId,
+      pageId: h.pageId,
+      isSection: h.isSection,
+    }));
     currentIndex = parsedData.currentIndex !== undefined ? parsedData.currentIndex : -1;
     favorites = parsedData.favorites || [];
 
@@ -471,15 +487,19 @@ async function updateHistory() {
     const itemIndex = history.findIndex((h) => h.frameId === item.id);
     if (itemIndex === -1) {
       history.push({ frameId: item.id, pageId, isSection });
-      if (history.length > historyLength) {
-        history = history.slice(-historyLength);
-      }
-      currentIndex = history.length - 1;
-      pushedAny = true;
     } else {
-      history[itemIndex].pageId = pageId;
-      currentIndex = itemIndex;
+      // Selecting an item that's already listed promotes it to the top of the
+      // list (most-recently-used order) rather than highlighting it in place.
+      const [existing] = history.splice(itemIndex, 1);
+      existing.pageId = pageId;
+      existing.isSection = isSection;
+      history.push(existing);
     }
+    if (history.length > historyLength) {
+      history = history.slice(-historyLength);
+    }
+    currentIndex = history.length - 1;
+    pushedAny = true;
   }
 
   // Selection only shrank (e.g. cmd-clicked to deselect). Re-anchor
