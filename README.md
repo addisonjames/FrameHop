@@ -2,7 +2,7 @@
 
 A faster way to move around your Figma and FigJam files.
 
-**[Install from the Figma Community →](https://www.figma.com/community/plugin/1319412441392289036/framehop)** · [framehop.xyz](https://framehop.xyz/)
+**[Install from the Figma Community](https://www.figma.com/community/plugin/1319412441392289036/framehop)** · [framehop.xyz](https://framehop.xyz/)
 
 ## Features
 
