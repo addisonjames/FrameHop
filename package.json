@@ -8,7 +8,7 @@
     "watch": "npm run build -- --watch"
   },
   "author": "Addison James",
-  "license": "",
+  "license": "MIT",
   "devDependencies": {
     "@figma/plugin-typings": "*",
     "typescript": "*"
